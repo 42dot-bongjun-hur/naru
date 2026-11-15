@@ -1,4 +1,4 @@
-"""Load and validate the legacy engine's site-specific settings."""
+"""Load and validate site-specific settings."""
 
 import re
 from pathlib import Path

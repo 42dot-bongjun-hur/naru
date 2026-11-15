@@ -191,7 +191,7 @@ def build_home(items, tpl_home, tpl_head, tpl_nav, footer_html, docs_assets, sit
         tpl_head,
         title=title,
         description=description,
-        tags=["DevBJ", "기술 기록", "IT", "문화", "스포츠"],
+        tags=[SITE_NAME, "기술 기록", "IT", "문화", "스포츠"],
         canonical_path=site_root_path(),
         og_image=f"{SITE_ORIGIN}{BASE_URL}/assets/{og_filename}"
     )

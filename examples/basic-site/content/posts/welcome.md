@@ -1,5 +1,6 @@
 ---
 title: Welcome to the example site
+nav_title: Welcome
 slug: welcome
 description: A small example post for a future Naru-powered site.
 published_date: 2026-01-01
@@ -10,5 +11,5 @@ tags:
 
 # Welcome
 
-This example shows the proposed Markdown content shape. The initial Naru scaffold
-does not yet build this site.
+This example shows the Markdown content format. The example site does not include
+the templates and static files needed for a complete build.

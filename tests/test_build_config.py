@@ -95,6 +95,9 @@ class BuildConfigurationTests(unittest.TestCase):
             (self.root / "templates" / name).write_text(
                 "{{ HEAD_HTML }} {{ SITE_ORIGIN }} {{ SITE_NAME }}", encoding="utf-8"
             )
+        (self.root / "templates" / "partial_head.html").write_text(
+            '<meta name="keywords" content="{{ KEYWORDS }}">', encoding="utf-8"
+        )
         env = os.environ.copy()
         env["PYTHONUTF8"] = "1"
         env["PYTHONPATH"] = str(EXAMPLE_CONFIG.parents[2] / "src")
@@ -130,7 +133,8 @@ class BuildConfigurationTests(unittest.TestCase):
                 origin.removeprefix("https://"),
             )
             self.assertIn(origin, (output / "rss.xml").read_text(encoding="utf-8"))
-            self.assertIn(name, (output / "index.html").read_text(encoding="utf-8"))
+            home = (output / "index.html").read_text(encoding="utf-8")
+            self.assertIn(f'content="{name}, 기술 기록, IT, 문화, 스포츠"', home)
 
 
 if __name__ == "__main__":
