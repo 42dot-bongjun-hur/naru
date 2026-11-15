@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "naru"
+version = "0.1.0"
+description = "A shared Python static site generator for independent websites"
+readme = "README.md"
+requires-python = ">=3.11"
+keywords = ["static-site-generator", "markdown", "website"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Internet :: WWW/HTTP :: Site Management",
+]
+dependencies = [
+  "Markdown>=3.7",
+  "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "ruff>=0.9",
+]
+
+[project.scripts]
+naru = "naru.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/naru"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/naru/engine/*.py" = ["E501"]
