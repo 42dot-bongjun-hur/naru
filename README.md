@@ -31,14 +31,9 @@ naru/
 
 ## 설치
 
-Python 3.11 이상과 Git이 필요합니다. GitHub의 고정 태그로 설치할 수 있습니다.
-
-```powershell
-python -m pip install "git+https://github.com/bjnhur/naru.git@v0.1.1"
-```
-
-PyPI에 `0.1.2`가 게시된 후에는 Git 없이 다음과 같이 버전을 고정해 설치할
-수 있습니다.
+Python 3.11 이상이 필요합니다. PyPI에서 버전을 고정해 설치합니다.
+이전에 Git에서 0.1.1을 설치한 환경이라면 두 배포 패키지가 같은 모듈을
+사용하므로 설치하기 전에 `python -m pip uninstall naru`로 제거하세요.
 
 ```powershell
 python -m pip install "naru-sitegen==0.1.2"
