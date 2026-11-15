@@ -67,7 +67,7 @@ def load_config(path: Path) -> dict:
         raise ConfigError(
             f"{path}: site configuration must be a mapping with string keys"
         )
-    missing, unknown = FIELDS - data.keys(), data.keys() - FIELDS
+    missing, unknown = {"site_name", "site_origin"} - data.keys(), data.keys() - FIELDS
     if missing or unknown:
         details = []
         if missing:
@@ -75,6 +75,39 @@ def load_config(path: Path) -> dict:
         if unknown:
             details.append(f"unknown fields: {', '.join(sorted(unknown))}")
         raise ConfigError(f"{path}: {'; '.join(details)}")
+    site_name = data["site_name"]
+    defaults = {
+        "site_slogan_en": site_name,
+        "site_slogan_ko": "",
+        "site_tagline": site_name,
+        "site_description": site_name,
+        "base_url": "",
+        "posts_url_prefix": "/posts",
+        "category_url_prefix": "/category",
+        "tag_url_prefix": "/tags",
+        "posts_per_page": 10,
+        "rss_item_limit": 50,
+        "rss_title": site_name,
+        "rss_description": site_name,
+        "category_labels": {},
+        "category_redirects": {},
+        "home_category_groups": [],
+        "home_category_order": [],
+        "home_posts_per_category": 8,
+        "home_recent_posts": 10,
+        "home_max_ads": 0,
+        "inline_ad_chars": 2500,
+        "inline_ad_max": 0,
+        "adsense_pub_id": "",
+        "ad_slot_top": "",
+        "ad_slot_mid": "",
+        "ad_slot_side": "",
+        "author_name": site_name,
+        "author_bio": "",
+        "author_notes": {},
+        "author_note_default": "",
+    }
+    data = {**defaults, **data}
     for field in STRING_FIELDS:
         if not isinstance(data[field], str) or (
             field in NONEMPTY_FIELDS and not data[field].strip()

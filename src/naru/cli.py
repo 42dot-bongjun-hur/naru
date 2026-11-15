@@ -72,10 +72,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             parser.error(
                 f"output directory overlaps site sources or Naru: {output_dir}"
             )
-        for required in (("content", "posts"), ("templates",), ("static", "tools")):
-            path = site_root.joinpath(*required)
-            if not path.is_dir():
-                parser.error(f"missing required site directory: {path}")
+        for name in ("content", "templates", "static", "assets"):
+            path = site_root / name
+            if path.exists() and not path.is_dir():
+                parser.error(f"site source is not a directory: {path}")
         marker = output_dir / ".naru-output"
         try:
             if output_dir.exists():

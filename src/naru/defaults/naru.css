@@ -1,0 +1,70 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, sans-serif;
+  line-height: 1.7;
+  color: #1c2430;
+  background: #fff;
+}
+
+body {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid #dfe3e8;
+}
+
+.site-name {
+  margin-right: auto;
+  font-weight: 700;
+}
+
+a {
+  color: #1654a3;
+}
+
+main {
+  min-height: 50vh;
+}
+
+article img {
+  max-width: 100%;
+  height: auto;
+}
+
+pre {
+  overflow: auto;
+  padding: 1rem;
+  background: #f3f5f7;
+}
+
+table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid #dfe3e8;
+}
+
+.home-article-card, .archive-card {
+  display: block;
+  padding: 0.75rem 0;
+}
+
+.site-footer {
+  margin-top: 3rem;
+  padding: 1rem 0;
+  border-top: 1px solid #dfe3e8;
+}

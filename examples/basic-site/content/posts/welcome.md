@@ -11,5 +11,5 @@ tags:
 
 # Welcome
 
-This example shows the Markdown content format. The example site does not include
-the templates and static files needed for a complete build.
+This example shows the Markdown content format. Naru supplies default templates
+and styles when the site does not provide its own.

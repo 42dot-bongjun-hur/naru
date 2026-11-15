@@ -6,12 +6,13 @@ Naru는 여러 사이트가 하나의 정적 사이트 생성 엔진을 공유�
 콘텐츠, 테마와 빌드 결과물은 각 프로젝트 안에서 독립적으로 관리하기 위한
 Python 기반 생성기 프로젝트입니다.
 
-> 0.1 시험판: 현재는 정해진 템플릿과 콘텐츠 구조를 사용합니다. 범용 테마와
-> 자유로운 페이지 구조는 아직 지원하지 않습니다.
+> 0.1 시험판: 기본 템플릿과 최소 설정을 제공하며, 정해진 페이지 구조를
+> 사용합니다.
 
 ## 기능
 
 - `naru.yml`을 이용한 사이트 설정과 출력 경로 분리
+- 패키지에 포함된 기본 템플릿과 스타일, 사이트별 템플릿 덮어쓰기
 - Markdown과 YAML front matter를 이용한 글·페이지 생성
 - 카테고리·태그 아카이브, RSS, sitemap, robots.txt 생성
 - 정적 파일과 글에 첨부한 이미지 복사
@@ -31,12 +32,12 @@ naru/
 
 ## 설치
 
-Python 3.11 이상이 필요합니다. PyPI에서 버전을 고정해 설치합니다.
+Python 3.11 이상이 필요합니다.
 이전에 Git에서 0.1.1을 설치한 환경이라면 두 배포 패키지가 같은 모듈을
 사용하므로 설치하기 전에 `python -m pip uninstall naru`로 제거하세요.
 
 ```powershell
-python -m pip install "naru-sitegen==0.1.2"
+python -m pip install "naru-sitegen==0.1.3"
 ```
 
 배포 패키지 이름은 `naru-sitegen`이며 Python 모듈과 CLI 이름은 `naru`입니다.
@@ -87,35 +88,70 @@ Naru가 생성한 `.naru-output` 표식이 있어야 합니다. 기존 폴더를
 인수하지 않으므로 처음에는 빈 출력 경로를 지정하세요. Naru가 관리하는
 출력 폴더의 HTML과 일부 정적 파일은 빌드할 때 정리·교체하므로, 직접 작성한
 파일을 그곳에 두지 마세요. 설정 예시는 `examples/basic-site/naru.yml`입니다.
-예제에는 빌드에 필요한 템플릿과 정적 파일이 포함되지 않아 그대로 빌드할 수
-없습니다.
 
-## 사이트 구조
+## 최소 사이트
 
-현재 버전은 아래 디렉터리와 템플릿 파일을 사용합니다.
+0.1.3에서는 사이트 폴더의 `naru.yml`에 이름과 공개 주소만 지정해도
+기본 템플릿으로 빌드할 수 있습니다.
+
+```yaml
+site_name: My Journal
+site_origin: https://example.com
+```
+
+`site_origin`은 경로가 없는 HTTP(S) 주소입니다. 게시할 주소로 바꾼 뒤
+사이트 폴더에서 다음을 실행합니다.
+
+```powershell
+python -m naru build --site-root . --output dist
+```
+
+글은 `content/posts/` 아래 Markdown 파일로 추가합니다. 폴더나 글이 없어도
+빈 사이트를 빌드할 수 있습니다. 템플릿, 스타일, 정적 파일은 필요할 때만
+사이트에서 제공합니다.
 
 ```text
 my-site/
 ├── naru.yml
+├── requirements.txt          # 사이트의 Naru 버전 고정
 ├── content/
-│   ├── posts/                 # Markdown 글
-│   ├── pages/                 # Markdown 페이지 (선택)
-│   └── data/                  # JSON 카탈로그 (선택)
-├── templates/
-│   ├── template_index.html, template_post.html
-│   ├── template_catalog.html, template_archive.html
-│   └── partial_head.html, partial_googletag.html, partial_nav.html, partial_footer.html
-├── static/
-│   └── tools/index.html
-└── assets/
+│   ├── posts/                # Markdown 글
+│   ├── pages/                # Markdown 페이지 (선택)
+│   └── data/                 # JSON 카탈로그 (선택)
+├── templates/                # 기본 템플릿 덮어쓰기 (선택)
+├── static/                   # 정적 파일 (선택)
+└── assets/                   # 스타일과 이미지 (선택)
 ```
+
+카테고리, 광고, URL 경로 등을 생략하면 기본값을 사용합니다. 생략 가능한
+필드라도 값을 지정했다면 유효해야 하며, 알 수 없는 필드는 오류입니다.
+사용 가능한 전체 설정은 `examples/basic-site/naru.yml`을 참고하세요.
+작성자 이름을 생략하면 사이트 이름을 사용합니다. 현재 일부 카테고리 설명과
+화면 문구는 기존 기술 블로그와 한국어를 전제로 하므로 범용 사이트에
+사용하기 전 결과물을 확인하세요.
+
+## 템플릿과 스타일
+
+별도 템플릿이 없으면 패키지에 포함된 기본 템플릿을 사용합니다. 사이트의
+`templates/`에 같은 이름의 파일이 있으면 그 파일을 우선하고, 없는 파일은
+기본 템플릿을 사용합니다. 템플릿 자리 표시자와 페이지 구조는 아직 고정되어
+있으므로 다른 생성기의 테마를 그대로 사용할 수는 없습니다.
+
+```text
+templates/
+├── template_index.html, template_post.html
+├── template_catalog.html, template_archive.html
+└── partial_head.html, partial_googletag.html, partial_nav.html, partial_footer.html
+```
+
+기본 헤더는 패키지의 `naru.css`를 사용합니다. 스타일을 변경하려면 사이트의
+`assets/naru.css` 또는 `static/assets/naru.css`를 제공하거나
+`partial_head.html`을 직접 작성하세요.
+`static/tools/`를 제공한다면 `index.html`도 필요합니다.
 
 Markdown 콘텐츠의 front matter에는 `title`, `nav_title`, `slug`,
 `description`, `published_date`, `updated_date`, `tags`가 필요합니다.
 날짜는 `YYYY-MM-DD` 형식이며 `slug`는 소문자 kebab-case를 사용합니다.
-현재 HTML 렌더링은 정해진 템플릿과 페이지 구조를 전제로 하므로, 임의의
-템플릿이나 테마가 그대로 동작한다고 보장하지 않습니다.
-
 소스 트리에서 직접 실행하려면 다음처럼 할 수 있습니다.
 
 ```powershell
@@ -127,6 +163,6 @@ python -m naru --version
 
 - 템플릿과 페이지 구조의 유연성을 개선합니다.
 - 설정과 렌더링의 결합을 줄여 다양한 사이트 구성을 지원합니다.
-- 완전하게 빌드할 수 있는 예제와 사용 문서를 보강합니다.
+- 기본 템플릿과 사용 문서를 보강합니다.
 
 상세한 경계와 모듈 책임은 [설계 문서](docs/architecture.md)를 참고하세요.

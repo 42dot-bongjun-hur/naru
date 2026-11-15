@@ -25,7 +25,7 @@ class CliTests(unittest.TestCase):
     def test_version_option(self) -> None:
         result = self.run_cli("--version")
         self.assertEqual(result.returncode, 0)
-        self.assertEqual(result.stdout.strip(), "naru 0.1.2")
+        self.assertEqual(result.stdout.strip(), "naru 0.1.3")
 
     def test_no_arguments_prints_help(self) -> None:
         result = self.run_cli()

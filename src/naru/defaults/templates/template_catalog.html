@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ko">
+<head>{{ HEAD_HTML }}</head>
+<body>
+  {{ NAV_HTML }}
+  <main>
+    <h1>{{ TITLE }}</h1>
+    <p>{{ DESCRIPTION }}</p>
+    {{ INTRO_GUIDE_HTML }}
+    <table>
+      <thead><tr><th>번호</th><th>이름</th><th>주소</th><th>상태</th></tr></thead>
+      <tbody>{{ ENTRIES_HTML }}</tbody>
+    </table>
+  </main>
+  {{ FOOTER_HTML }}
+</body>
+</html>

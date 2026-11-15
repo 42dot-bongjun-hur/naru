@@ -2,6 +2,7 @@ import hashlib
 import json
 import re
 import shutil
+from importlib.resources import files
 from urllib.parse import quote
 from xml.sax.saxutils import escape, quoteattr
 
@@ -64,7 +65,6 @@ from .seo import (
 def sync_static_files():
     """static/ 폴더 내 파일들을 docs/ 루트로 그대로 복사"""
     if not STATIC_DIR.exists():
-        STATIC_DIR.mkdir(parents=True, exist_ok=True)
         return
 
     copied_count = 0
@@ -101,7 +101,12 @@ def sync_post_images(items, docs_assets):
     print(f"[OK] 게시물 이미지 동기화 완료 ({copied_count}개)")
 
 def read_template(name: str) -> str:
-    return (TPL_DIR / name).read_text(encoding="utf-8")
+    site_template = TPL_DIR / name
+    if site_template.exists():
+        return site_template.read_text(encoding="utf-8")
+    return files("naru").joinpath("defaults", "templates", name).read_text(
+        encoding="utf-8"
+    )
 
 def render_head(
     tpl_head, title, description, tags, canonical_path, og_image,
@@ -121,6 +126,9 @@ def render_head(
 
 def render_nav(tpl_nav, nav_right_html, top_nav_links):
     return tpl_nav.replace("{{ BASE_URL }}", BASE_URL) \
+                  .replace("{{ POSTS_URL_PREFIX }}", POSTS_URL_PREFIX) \
+                  .replace("{{ CATEGORY_URL_PREFIX }}", CATEGORY_URL_PREFIX) \
+                  .replace("{{ TAG_URL_PREFIX }}", TAG_URL_PREFIX) \
                   .replace("{{ SITE_NAME }}", escape(SITE_NAME)) \
                   .replace("{{ SITE_TAGLINE }}", escape(SITE_TAGLINE)) \
                   .replace("{{ TOP_NAV_LINKS }}", top_nav_links) \
@@ -1008,6 +1016,18 @@ def main():
         shutil.copytree(BASE_DIR / "assets", docs_assets)
 
     sync_static_files()
+    docs_assets.mkdir(parents=True, exist_ok=True)
+    if not (TPL_DIR / "partial_head.html").exists() and not any(
+        path.exists()
+        for path in (
+            BASE_DIR / "assets" / "naru.css",
+            STATIC_DIR / "assets" / "naru.css",
+        )
+    ):
+        css = files("naru").joinpath("defaults", "naru.css").read_text(
+            encoding="utf-8"
+        )
+        (docs_assets / "naru.css").write_text(css, encoding="utf-8")
     site_domain = generate_github_pages_meta()
 
     tpl_home = read_template("template_index.html")
@@ -1041,7 +1061,8 @@ def main():
     nav_html = render_nav(tpl_nav, "", top_nav_links)
     info_pages = [item for item in items if item["type"] == "page"]
     footer_html = render_footer(tpl_footer, site_domain, info_pages)
-    build_tools_page(nav_html, footer_html)
+    if (STATIC_DIR / "tools").exists():
+        build_tools_page(nav_html, footer_html)
 
     all_posts = [it for it in items if it["type"] == "post"]
     category_nav_items = [f'<li><a href="{site_root_path()}">🏠 전체 노트</a></li>']
@@ -1060,10 +1081,10 @@ def main():
         hubs, tpl_archive, tpl_head, tpl_nav, footer_html, docs_assets,
         site_domain, top_nav_links,
     )]
-    archive_paths.extend((
-        archive_path("tools"),
-        archive_path("tools/regex-live-tester"),
-    ))
+    if (OUT_DIR / "tools" / "index.html").is_file():
+        archive_paths.append(archive_path("tools"))
+    if (OUT_DIR / "tools" / "regex-live-tester" / "index.html").is_file():
+        archive_paths.append(archive_path("tools/regex-live-tester"))
     archive_paths.extend(build_post_archives(
         all_posts, tpl_archive, tpl_head, tpl_nav, footer_html, docs_assets,
         site_domain, top_nav_links,

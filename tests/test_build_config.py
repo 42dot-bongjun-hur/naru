@@ -47,6 +47,137 @@ class BuildConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ConfigError, "unknown fields: typo"):
             load_config(self.config)
 
+    def test_minimal_configuration_uses_site_specific_defaults(self) -> None:
+        self.config.write_text(
+            "site_name: Test Site\nsite_origin: https://example.com\n",
+            encoding="utf-8",
+        )
+        data = load_config(self.config)
+        self.assertEqual(data["site_tagline"], "Test Site")
+        self.assertEqual(data["rss_title"], "Test Site")
+        self.assertEqual(data["author_name"], "Test Site")
+        self.assertEqual(data["home_max_ads"], 0)
+        self.assertEqual(data["posts_url_prefix"], "/posts")
+        self.config.write_text("site_name: Test Site\n", encoding="utf-8")
+        with self.assertRaisesRegex(ConfigError, "missing fields: site_origin"):
+            load_config(self.config)
+        self.config.write_text(
+            "site_name: Test Site\nsite_origin: https://example.com\n"
+            "posts_per_page: null\n",
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(ConfigError, "posts_per_page"):
+            load_config(self.config)
+
+    def test_minimal_site_and_template_override_build(self) -> None:
+        self.config.write_text(
+            "site_name: Test Site\nsite_origin: https://example.com\n"
+            "base_url: /journal\n",
+            encoding="utf-8",
+        )
+        post = self.root / "content" / "posts" / "hello.md"
+        post.write_text(
+            "---\ntitle: Hello\nnav_title: Hello\nslug: hello\n"
+            "description: First post\npublished_date: '2026-01-01'\n"
+            "updated_date: '2026-01-01'\ncategory: blog\ntags: [Example]\n"
+            "---\n\nWelcome to the site.\n",
+            encoding="utf-8",
+        )
+        (self.root / "static" / "tools").rmdir()
+        env = os.environ.copy()
+        env["PYTHONUTF8"] = "1"
+        env["PYTHONPATH"] = str(EXAMPLE_CONFIG.parents[2] / "src")
+
+        def build(output: str) -> None:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "naru",
+                    "build",
+                    "--site-root",
+                    str(self.root),
+                    "--output",
+                    output,
+                ],
+                env=env,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+        build("output")
+        output = self.root / "output"
+        home = (output / "index.html").read_text(encoding="utf-8")
+        post_html = (output / "posts" / "hello" / "index.html").read_text(
+            encoding="utf-8"
+        )
+        sitemap = (output / "sitemap.xml").read_text(encoding="utf-8")
+        self.assertIn("/journal/posts/hello/", home)
+        self.assertIn("/journal/assets/naru.css", home)
+        self.assertIn("Welcome to the site.", post_html)
+        self.assertTrue((output / "assets" / "naru.css").is_file())
+        self.assertNotIn("/tools/", sitemap)
+        assets = self.root / "assets"
+        assets.mkdir()
+        (assets / "naru.css").write_text("/* custom */", encoding="utf-8")
+        build("custom-css-output")
+        self.assertEqual(
+            (self.root / "custom-css-output" / "assets" / "naru.css").read_text(
+                encoding="utf-8"
+            ),
+            "/* custom */",
+        )
+        (self.root / "templates" / "partial_head.html").write_text(
+            "<title>Custom {{ TITLE }}</title>", encoding="utf-8"
+        )
+        build("custom-output")
+        custom_home = (self.root / "custom-output" / "index.html").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("<title>Custom Test Site</title>", custom_home)
+        self.assertIn("/journal/posts/hello/", custom_home)
+
+    def test_empty_site_builds_without_optional_source_directories(self) -> None:
+        self.config.write_text(
+            "site_name: Empty Site\nsite_origin: https://example.com\n",
+            encoding="utf-8",
+        )
+        for path in (
+            self.root / "content" / "posts",
+            self.root / "content",
+            self.root / "templates",
+            self.root / "static" / "tools",
+            self.root / "static",
+        ):
+            path.rmdir()
+        env = os.environ.copy()
+        env["PYTHONUTF8"] = "1"
+        env["PYTHONPATH"] = str(EXAMPLE_CONFIG.parents[2] / "src")
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "naru",
+                "build",
+                "--site-root",
+                str(self.root),
+                "--output",
+                "output",
+            ],
+            env=env,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((self.root / "output" / "index.html").is_file())
+        self.assertTrue((self.root / "output" / "assets" / "naru.css").is_file())
+        self.assertFalse((self.root / "static").exists())
+
     def test_existing_unmanaged_output_is_preserved(self) -> None:
         output = self.root / "output"
         output.mkdir()
