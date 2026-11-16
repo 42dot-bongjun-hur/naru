@@ -658,8 +658,16 @@ def build_category_redirects():
 
 def _archive_card(item):
     href = tag_path(item["slug"]) if item["type"] == "tag" else content_path(item)
+    category = content_category(item)
+    category_label = CATEGORY_LABELS.get(category, category)
+    category_badge = (
+        f'<span class="home-article-category-label">{escape(category_label)}</span>'
+        if category_label
+        else ""
+    )
     return f"""
       <a class="home-article-card" href="{href}">
+        {category_badge}
         <span class="home-article-date">{escape(item.get("published_date", ""))}</span>
         <strong>{escape(item["title"])}</strong>
         <span class="home-article-description">{escape(item["description"])}</span>
@@ -692,20 +700,20 @@ def build_archive_page(
     output_path.write_text(rendered, encoding="utf-8")
 
 
-def build_post_archives(posts, tpl_archive, tpl_head, tpl_nav, footer_html, docs_assets, site_domain, top_nav_links):
-    ordered_posts = sorted(
-        posts,
+def build_post_archives(content_items, tpl_archive, tpl_head, tpl_nav, footer_html, docs_assets, site_domain, top_nav_links):
+    ordered_items = sorted(
+        content_items,
         key=lambda item: (item["published_date"], item["slug"]),
         reverse=True,
     )
-    page_count = max(1, (len(ordered_posts) + POSTS_PER_PAGE - 1) // POSTS_PER_PAGE)
+    page_count = max(1, (len(ordered_items) + POSTS_PER_PAGE - 1) // POSTS_PER_PAGE)
     archive_paths = []
     for page_number in range(1, page_count + 1):
         slug = "" if page_number == 1 else str(page_number)
         route = archive_path(POSTS_URL_PREFIX, slug)
         if page_number == 1:
             archive_paths.append(route)
-        page_items = ordered_posts[
+        page_items = ordered_items[
             (page_number - 1) * POSTS_PER_PAGE:page_number * POSTS_PER_PAGE
         ]
         pagination_links = []
@@ -725,7 +733,7 @@ def build_post_archives(posts, tpl_archive, tpl_head, tpl_nav, footer_html, docs
         build_archive_page(
             tpl_archive, tpl_head, tpl_nav, footer_html, docs_assets,
             site_domain, top_nav_links,
-            "글 목록" if page_number == 1 else f"글 목록 {page_number}페이지",
+            "콘텐츠 목록" if page_number == 1 else f"콘텐츠 목록 {page_number}페이지",
             SITE_DESCRIPTION,
             route,
             page_items,
@@ -1109,7 +1117,7 @@ def main():
     if (OUT_DIR / "tools" / "regex-live-tester" / "index.html").is_file():
         archive_paths.append(archive_path("tools/regex-live-tester"))
     archive_paths.extend(build_post_archives(
-        all_posts, tpl_archive, tpl_head, tpl_nav, footer_html, docs_assets,
+        categorized_items, tpl_archive, tpl_head, tpl_nav, footer_html, docs_assets,
         site_domain, top_nav_links,
     ))
     tag_count = build_tag_archives(

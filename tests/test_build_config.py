@@ -243,6 +243,9 @@ class BuildConfigurationTests(unittest.TestCase):
         bookmark_category = (
             output / "category" / "bookmark" / "index.html"
         ).read_text(encoding="utf-8")
+        all_content = (output / "posts" / "index.html").read_text(
+            encoding="utf-8"
+        )
         blog_category = (output / "category" / "blog" / "index.html").read_text(
             encoding="utf-8"
         )
@@ -266,6 +269,11 @@ class BuildConfigurationTests(unittest.TestCase):
         self.assertIn('<code class="language-python">', post)
         self.assertIn("Markdown 기본 문법", blog_category)
         self.assertIn("Python 정적 사이트 생성기(SSG) 모음", bookmark_category)
+        self.assertIn("<h1>콘텐츠 목록</h1>", all_content)
+        self.assertIn("Markdown 기본 문법", all_content)
+        self.assertIn("Python 정적 사이트 생성기(SSG) 모음", all_content)
+        self.assertIn(">Blog</span>", all_content)
+        self.assertIn(">Bookmarks</span>", all_content)
         self.assertIn("https://example.com/python-ssg/", feed)
 
     def test_existing_unmanaged_output_is_preserved(self) -> None:

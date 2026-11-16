@@ -18,7 +18,7 @@ JSON 북마크가 함께 표시되는 실제 배포 예제입니다.
 - 패키지에 포함된 기본 템플릿과 스타일, 사이트별 템플릿 덮어쓰기
 - JSON 카탈로그를 HTML 링크·북마크 모음 페이지로 생성
 - Markdown 블로그 글과 페이지 생성
-- 블로그 글과 JSON 카탈로그를 홈의 최신 목록과 카테고리별 목록에 함께 표시
+- 블로그 글과 JSON 카탈로그를 홈, `/posts/` 콘텐츠 목록, 카테고리별 목록에 함께 표시
 - 카테고리·태그 아카이브, RSS, sitemap, robots.txt 생성
 - 정적 파일과 글에 첨부한 이미지 복사
 - 예제 사이트의 GitHub Actions → Pages 자동 배포
@@ -31,14 +31,14 @@ Naru는 콘텐츠를 JSON 또는 Markdown으로 작성하고, 배포할 수 있�
 | 용도 | 입력 | 생성 결과 |
 | --- | --- | --- |
 | 링크·북마크 모음 | `content/data/*.json`의 `page_info`와 `sites` | JSON 파일마다 `/슬러그/` 카탈로그 페이지 |
-| 블로그 | `content/posts/*.md`의 YAML front matter와 Markdown | `/posts/슬러그/` 글 페이지 |
+| 블로그 | `content/posts/*.md`의 YAML front matter와 Markdown | `/posts/슬러그/` 글 페이지 및 JSON 카탈로그와 통합된 `/posts/` 목록 |
 | 카테고리·태그 | 글 front matter의 `category`, `tags`; JSON `page_info.category` | 홈의 카테고리별 목록과 `/category/슬러그/`, `/tags/태그/` 아카이브 |
 | 일반 페이지 | `content/pages/*.md` | `/슬러그/` 페이지 |
 
 예를 들어 북마크나 참고 링크를 JSON 카탈로그로 정리하면서, 같은 사이트에
 `blog` 카테고리의 Markdown 글을 함께 둘 수 있습니다. 두 콘텐츠 유형은
-홈의 최신 콘텐츠 목록에 같이 나오며, JSON 카탈로그는 `bookmark`, 블로그 글은
-`blog` 같은 카테고리별 목록과 아카이브에 모을 수 있습니다. JSON은 그대로
+홈과 `/posts/`의 전체 콘텐츠 목록에 같은 방식으로 표시되며, JSON 카탈로그는
+`bookmark`, 블로그 글은 `blog` 같은 카테고리별 목록과 아카이브에 모을 수 있습니다. JSON은 그대로
 노출되지 않고 Naru가 사이트 템플릿에 맞는 HTML 페이지로 변환합니다.
 생성물은 GitHub Pages 등 정적 호스팅에 배포할 수 있으며, 이 저장소의 예제는
 `naru.devbj.com`으로 자동 배포하도록 구성되어 있습니다.
