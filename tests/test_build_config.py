@@ -320,6 +320,7 @@ class BuildConfigurationTests(unittest.TestCase):
             output / "category" / "bookmark" / "index.html"
         ).read_text(encoding="utf-8")
         self.assertIn("<dl class=\"catalog-meta\">", catalog)
+        self.assertIn('<div class="catalog-table-wrap">', catalog)
         self.assertIn('<table class="catalog-table">', catalog)
         self.assertIn("용도에 따라 선택하기", catalog)
         self.assertIn(

@@ -114,6 +114,11 @@ pre code {
   background: transparent;
 }
 
+.catalog-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 table {
   display: block;
   max-width: 100%;
@@ -122,8 +127,11 @@ table {
 }
 
 .catalog-table {
+  display: table;
   width: 100%;
+  max-width: none;
   min-width: 52rem;
+  table-layout: fixed;
 }
 
 .catalog-table th:first-child,

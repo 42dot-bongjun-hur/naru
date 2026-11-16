@@ -13,10 +13,12 @@
       <div><dt>관리 메모</dt><dd>{{ MAINTENANCE_NOTE }}</dd></div>
     </dl>
     {{ INTRO_GUIDE_HTML }}
-    <table class="catalog-table">
-      <thead><tr><th>번호</th><th>이름</th><th>주소</th><th>상태</th></tr></thead>
-      <tbody>{{ ENTRIES_HTML }}</tbody>
-    </table>
+    <div class="catalog-table-wrap">
+      <table class="catalog-table">
+        <thead><tr><th>번호</th><th>이름</th><th>주소</th><th>상태</th></tr></thead>
+        <tbody>{{ ENTRIES_HTML }}</tbody>
+      </table>
+    </div>
   </main>
   {{ FOOTER_HTML }}
 </body>
