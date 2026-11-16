@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import subprocess
 import sys
@@ -117,6 +118,13 @@ class BuildConfigurationTests(unittest.TestCase):
         sitemap = (output / "sitemap.xml").read_text(encoding="utf-8")
         self.assertIn("/journal/posts/hello/", home)
         self.assertIn("/journal/assets/naru.css", home)
+        css_version = hashlib.sha256(
+            (output / "assets" / "naru.css").read_bytes()
+        ).hexdigest()[:12]
+        self.assertIn(
+            f"/journal/assets/naru.css?v={css_version}",
+            home,
+        )
         self.assertIn("Welcome to the site.", post_html)
         self.assertTrue((output / "assets" / "naru.css").is_file())
         self.assertNotIn("/tools/", sitemap)

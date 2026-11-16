@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "naru-sitegen"
-version = "0.1.3"
-description = "Python static site generator for Markdown blogs and JSON link catalogs"
+version = "0.2.0"
+description = "A simple, Korean-friendly Python static site generator for Markdown sites"
 readme = "README.md"
 requires-python = ">=3.11"
 keywords = ["static-site-generator", "markdown", "website"]
@@ -26,8 +26,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/bjnhur/naru"
+Homepage = "https://naru.devbj.com"
 Repository = "https://github.com/bjnhur/naru"
+PyPI = "https://pypi.org/project/naru-sitegen/"
 Example = "https://naru.devbj.com"
 
 [project.optional-dependencies]

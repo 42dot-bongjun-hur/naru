@@ -2,14 +2,16 @@
 
 **콘텐츠는 각자, 생성기는 함께.**
 
-Naru는 여러 사이트가 하나의 정적 사이트 생성 엔진을 공유하면서도 설정,
-콘텐츠, 테마와 빌드 결과물은 각 프로젝트 안에서 독립적으로 관리하기 위한
-Python 기반 생성기 프로젝트입니다.
+Naru는 한글 콘텐츠 작성에 익숙한 사용자를 위한 간단한 Python 정적 사이트
+생성기입니다. 복잡한 테마·플러그인 설정 대신, Markdown 글과 페이지 등
+정적 콘텐츠 사이트에 필요한 기본 기능을 제공합니다. 각 사이트의 설정과
+콘텐츠, 빌드 결과물은 해당 프로젝트 안에서 독립적으로 관리합니다.
 
-**예제 사이트:** [naru.devbj.com](https://naru.devbj.com) — Markdown 소개글과
-북마크 표를 같은 카탈로그 템플릿으로 렌더링하는 예제를 볼 수 있습니다.
+**소개 및 예제:** [naru.devbj.com](https://naru.devbj.com) ·
+[GitHub 저장소](https://github.com/bjnhur/naru) ·
+[PyPI 패키지](https://pypi.org/project/naru-sitegen/)
 
-> 0.1 시험판: 기본 템플릿과 최소 설정을 제공하며, 정해진 페이지 구조를
+> 0.x 시험판: 기본 템플릿과 최소 설정을 제공하며, 정해진 페이지 구조를
 > 사용합니다.
 
 ## 기능
@@ -17,8 +19,8 @@ Python 기반 생성기 프로젝트입니다.
 - `naru.yml`을 이용한 사이트 설정과 출력 경로 분리
 - 패키지에 포함된 기본 템플릿과 스타일, 사이트별 템플릿 덮어쓰기
 - Markdown 블로그 글과 페이지 생성
-- Markdown 글과 선택형 JSON 카탈로그를 홈, `/posts/` 콘텐츠 목록,
-  카테고리별 목록에 함께 표시
+- Markdown 글, Markdown 카탈로그, 선택형 JSON 카탈로그를 홈, `/posts/`
+  콘텐츠 목록, 카테고리별 목록에 함께 표시
 - 카테고리·태그 아카이브, RSS, sitemap, robots.txt 생성
 - 정적 파일과 글에 첨부한 이미지 복사
 - 예제 사이트의 GitHub Actions → Pages 자동 배포
@@ -62,7 +64,7 @@ Python 3.11 이상이 필요합니다.
 사용하므로 설치하기 전에 `python -m pip uninstall naru`로 제거하세요.
 
 ```powershell
-python -m pip install "naru-sitegen==0.1.3"
+python -m pip install "naru-sitegen==0.2.0"
 ```
 
 > [!IMPORTANT]
@@ -78,15 +80,16 @@ python -m pip install "naru-sitegen==0.1.3"
 
 ## PyPI 배포
 
-최초 게시 전에 PyPI 계정에서 새 프로젝트 `naru-sitegen`의 pending trusted
-publisher를 등록합니다. 소유자는 `bjnhur`, 저장소는 `naru`, 워크플로 파일은
-`publish.yml`, 환경은 `pypi`입니다. GitHub 저장소에 같은 이름의 환경이
-필요하며 필요한 경우 환경 보호 규칙을 설정합니다.
+패키지 페이지: [pypi.org/project/naru-sitegen](https://pypi.org/project/naru-sitegen/).
+배포 워크플로는 GitHub Actions의 PyPI Trusted Publishing을 사용합니다. 새
+패키지에 이를 처음 설정할 때는 PyPI 프로젝트에 소유자 `bjnhur`, 저장소
+`naru`, 워크플로 파일 `publish.yml`, 환경 `pypi`를 등록하고 GitHub 저장소에
+같은 이름의 환경을 만듭니다.
 
 버전을 올릴 때는 `pyproject.toml`과 `src/naru/__init__.py`의 버전 및 CLI
 테스트를 함께 갱신하고 테스트를 통과시킵니다. 변경을 기본 브랜치에 반영한
 후 같은 커밋에 `v` 접두사가 붙은 버전 태그를 만들고 push합니다. 예를 들어
-`0.1.2`의 태그는 `v0.1.2`입니다. 태그 push 시 워크플로가 태그와 버전 일치,
+`0.2.0`의 태그는 `v0.2.0`입니다. 태그 push 시 워크플로가 태그와 버전 일치,
 테스트 및 배포 파일을 확인한 후 PyPI에
 게시합니다. 한 번 업로드한 배포 파일은 동일한 이름으로 다시 업로드할 수
 없으므로, 게시 후 변경에는 새 버전이 필요합니다.
@@ -123,7 +126,7 @@ Naru가 생성한 `.naru-output` 표식이 있어야 합니다. 기존 폴더를
 
 ## 최소 사이트
 
-0.1.3에서는 사이트 폴더의 `naru.yml`에 이름과 공개 주소만 지정해도
+0.2.0에서는 사이트 폴더의 `naru.yml`에 이름과 공개 주소만 지정해도
 기본 템플릿으로 빌드할 수 있습니다.
 
 ```yaml

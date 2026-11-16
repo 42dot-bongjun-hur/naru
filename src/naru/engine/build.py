@@ -61,6 +61,8 @@ from .seo import (
     generate_sitemap,
 )
 
+CSS_VERSION = ""
+
 
 def sync_static_files():
     """static/ 폴더 내 파일들을 docs/ 루트로 그대로 복사"""
@@ -113,6 +115,7 @@ def render_head(
     og_type="website", robots="index, follow",
 ):
     return tpl_head.replace("{{ BASE_URL }}", BASE_URL) \
+                   .replace("{{ CSS_VERSION }}", CSS_VERSION) \
                    .replace("{{ SITE_ORIGIN }}", SITE_ORIGIN) \
                    .replace("{{ SITE_NAME }}", escape(SITE_NAME)) \
                    .replace("{{ ADSENSE_PUB_ID }}", ADSENSE_PUB_ID) \
@@ -1037,6 +1040,7 @@ def build_post(item, catalog_nav_list, category_nav_list, tpl_post, tpl_head, tp
     print(f"[OK] {output_path.relative_to(OUT_DIR)} 생성 완료")
 
 def main():
+    global CSS_VERSION
     if not DATA_DIR.exists():
         print(f"안내: {DATA_DIR} 디렉토리가 없어 JSON 카탈로그 없이 빌드합니다.")
 
@@ -1061,6 +1065,9 @@ def main():
             encoding="utf-8"
         )
         (docs_assets / "naru.css").write_text(css, encoding="utf-8")
+    stylesheet = docs_assets / "naru.css"
+    if stylesheet.is_file():
+        CSS_VERSION = hashlib.sha256(stylesheet.read_bytes()).hexdigest()[:12]
     site_domain = generate_github_pages_meta()
 
     tpl_home = read_template("template_index.html")
