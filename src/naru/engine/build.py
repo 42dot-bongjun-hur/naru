@@ -424,46 +424,53 @@ def build_catalog(item, nav_items_list, category_nav_list, tpl_cat, tpl_head, tp
         for i, s in enumerate(sites)
     ])
 
-    raw_guide = p_info.get("intro_guide", [])
-    if isinstance(raw_guide, str):
-        paragraphs = [p.strip() for p in raw_guide.split("\n\n") if p.strip()]
-    else:
-        paragraphs = [str(p).strip() for p in raw_guide if str(p).strip()]
-
-    intro_guide_html = ""
-    if paragraphs:
-        rendered_blocks = []
-        for p in paragraphs:
-            if p.startswith("■"):
-                lines = p.split("\n", 1)
-                heading = lines[0].replace("■", "").strip()
-                body = lines[1].strip() if len(lines) > 1 else ""
-
-                if "원리" in heading or "법적" in heading or "주의사항" in heading:
-                    rendered_blocks.append(f"""
-                    <div class="guide-box-legal">
-                      <h3 class="guide-subheading">🛡️ {escape(heading)}</h3>
-                      <p>{escape(body)}</p>
-                    </div>""")
-                elif "오류" in heading or "해결" in heading or "팁" in heading:
-                    rendered_blocks.append(f"""
-                    <div class="guide-box-tip">
-                      <h3 class="guide-subheading">💡 {escape(heading)}</h3>
-                      <p>{escape(body)}</p>
-                    </div>""")
-                else:
-                    rendered_blocks.append(f"""
-                    <div class="guide-box-normal">
-                      <h3 class="guide-subheading">{escape(heading)}</h3>
-                      <p>{escape(body)}</p>
-                    </div>""")
-            else:
-                rendered_blocks.append(f'<p class="guide-lead-text">{escape(p)}</p>')
-
+    markdown_intro_html = item.get("markdown_intro_html")
+    if markdown_intro_html is not None:
         intro_guide_html = f"""
         <section class="catalog-guide-section" aria-label="이용 안내 및 가이드">
-          {"".join(rendered_blocks)}
+          {markdown_intro_html}
         </section>"""
+    else:
+        raw_guide = p_info.get("intro_guide", [])
+        if isinstance(raw_guide, str):
+            paragraphs = [p.strip() for p in raw_guide.split("\n\n") if p.strip()]
+        else:
+            paragraphs = [str(p).strip() for p in raw_guide if str(p).strip()]
+
+        intro_guide_html = ""
+        if paragraphs:
+            rendered_blocks = []
+            for p in paragraphs:
+                if p.startswith("■"):
+                    lines = p.split("\n", 1)
+                    heading = lines[0].replace("■", "").strip()
+                    body = lines[1].strip() if len(lines) > 1 else ""
+
+                    if "원리" in heading or "법적" in heading or "주의사항" in heading:
+                        rendered_blocks.append(f"""
+                        <div class="guide-box-legal">
+                          <h3 class="guide-subheading">🛡️ {escape(heading)}</h3>
+                          <p>{escape(body)}</p>
+                        </div>""")
+                    elif "오류" in heading or "해결" in heading or "팁" in heading:
+                        rendered_blocks.append(f"""
+                        <div class="guide-box-tip">
+                          <h3 class="guide-subheading">💡 {escape(heading)}</h3>
+                          <p>{escape(body)}</p>
+                        </div>""")
+                    else:
+                        rendered_blocks.append(f"""
+                        <div class="guide-box-normal">
+                          <h3 class="guide-subheading">{escape(heading)}</h3>
+                          <p>{escape(body)}</p>
+                        </div>""")
+                else:
+                    rendered_blocks.append(f'<p class="guide-lead-text">{escape(p)}</p>')
+
+            intro_guide_html = f"""
+            <section class="catalog-guide-section" aria-label="이용 안내 및 가이드">
+              {"".join(rendered_blocks)}
+            </section>"""
 
     entries = []
 

@@ -291,6 +291,17 @@ def load_markdown_contents(markdown_dir: Path, item_type: str):
         meta = yaml.safe_load(parts[1]) or {}
         if not isinstance(meta, dict):
             raise ValueError(f"{md_file}: YAML front matter must be a mapping")
+        layout = meta.pop("layout", None)
+        if layout not in (None, "catalog"):
+            raise ValueError(f"{md_file}: layout must be 'catalog' when specified")
+        if layout == "catalog" and item_type != "post":
+            raise ValueError(f"{md_file}: catalog layout is only supported for posts")
+        catalog_sites = None
+        if layout == "catalog":
+            meta.setdefault("category", "bookmark")
+            catalog_sites = normalize_catalog_sites(
+                meta.pop("sites", []), str(md_file)
+            )
         meta = normalize_metadata(meta, str(md_file))
         content_md = parts[2].strip()
 
@@ -309,9 +320,9 @@ def load_markdown_contents(markdown_dir: Path, item_type: str):
         html_body = md.convert(content_md)
 
         slug = meta["slug"]
-        items.append({
+        item = {
             "slug": slug,
-            "type": item_type,
+            "type": "catalog" if layout == "catalog" else item_type,
             "title": meta["title"],
             "nav_title": meta["nav_title"],
             "description": meta["description"],
@@ -329,9 +340,29 @@ def load_markdown_contents(markdown_dir: Path, item_type: str):
                 else []
             ),
             "toc_tokens": md.toc_tokens,
-            "meta": meta
-        })
+            "meta": meta,
+        }
+        if layout == "catalog":
+            item.update({
+                "links_checked_date": meta["links_checked_date"],
+                "badge": f"#{slug}",
+                "stat_text": f"{len(catalog_sites)}개 사이트",
+                "action_text": "목록 확인하기 →",
+                "raw_data": {"page_info": meta, "sites": catalog_sites},
+                "markdown_intro_html": html_body,
+            })
+        items.append(item)
     return items
+
+
+def normalize_catalog_sites(sites, source_name: str):
+    if not isinstance(sites, list):
+        raise ValueError(f"{source_name}: sites must be a list")
+    for site in sites:
+        if not isinstance(site, dict) or "description" not in site:
+            raise ValueError(f"{source_name}: each site must include a description")
+        site["description"] = str(site["description"]).strip()
+    return sites
 
 
 def load_all_contents(data_dir: Path, posts_dir: Path, pages_dir: Path | None = None):
@@ -347,15 +378,9 @@ def load_all_contents(data_dir: Path, posts_dir: Path, pages_dir: Path | None = 
             p_info.setdefault("category", "bookmark")
             p_info = normalize_metadata(p_info, str(json_file))
             slug = p_info["slug"]
-            if not isinstance(data.get("sites", []), list):
-                raise ValueError(f"{json_file}: sites must be a list")
+            sites = normalize_catalog_sites(data.get("sites", []), str(json_file))
             data["page_info"] = p_info
-            for site in data.get("sites", []):
-                if not isinstance(site, dict) or "description" not in site:
-                    raise ValueError(
-                        f"{json_file}: each site must include a description"
-                    )
-                site["description"] = str(site["description"]).strip()
+            data["sites"] = sites
             items.append({
                 "slug": slug,
                 "type": "catalog",

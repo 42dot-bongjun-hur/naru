@@ -207,17 +207,6 @@ class BuildConfigurationTests(unittest.TestCase):
         (self.root / "content" / "posts" / post_example.name).write_text(
             post_example.read_text(encoding="utf-8"), encoding="utf-8"
         )
-        bookmark_example = (
-            Path(__file__).resolve().parents[1]
-            / "examples"
-            / "basic-site"
-            / "content"
-            / "posts"
-            / "python-ssg.md"
-        )
-        (self.root / "content" / "posts" / bookmark_example.name).write_text(
-            bookmark_example.read_text(encoding="utf-8"), encoding="utf-8"
-        )
         (self.root / "static" / "tools").rmdir()
 
         env = os.environ.copy()
@@ -282,13 +271,64 @@ class BuildConfigurationTests(unittest.TestCase):
         self.assertIn("<h1>콘텐츠 목록</h1>", all_content)
         self.assertIn("Markdown 기본 문법", all_content)
         self.assertIn("Python 정적 사이트 생성기(SSG) 모음", all_content)
-        markdown_bookmark = (
-            output / "posts" / "python-ssg" / "index.html"
-        ).read_text(encoding="utf-8")
-        self.assertIn("https://getpelican.com/", markdown_bookmark)
         self.assertIn(">Blog</span>", all_content)
         self.assertIn(">Bookmarks</span>", all_content)
         self.assertIn("https://example.com/python-ssg/", feed)
+
+    def test_markdown_catalog_uses_the_catalog_template(self) -> None:
+        markdown_example = (
+            Path(__file__).resolve().parents[1]
+            / "examples"
+            / "basic-site"
+            / "content"
+            / "posts"
+            / "python-ssg.md"
+        )
+        (self.root / "content" / "posts" / markdown_example.name).write_text(
+            markdown_example.read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        (self.root / "static" / "tools").rmdir()
+        env = os.environ.copy()
+        env["PYTHONUTF8"] = "1"
+        env["PYTHONPATH"] = str(EXAMPLE_CONFIG.parents[2] / "src")
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "naru",
+                "build",
+                "--site-root",
+                str(self.root),
+                "--output",
+                "output",
+            ],
+            env=env,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+        output = self.root / "output"
+        catalog = (output / "python-ssg" / "index.html").read_text(
+            encoding="utf-8"
+        )
+        archive = (output / "posts" / "index.html").read_text(encoding="utf-8")
+        bookmark_category = (
+            output / "category" / "bookmark" / "index.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn("<dl class=\"catalog-meta\">", catalog)
+        self.assertIn("<table>", catalog)
+        self.assertIn("용도에 따라 선택하기", catalog)
+        self.assertIn(
+            "2026-11-16 공식 사이트 링크와 프로젝트 소개를 확인했습니다.",
+            catalog,
+        )
+        self.assertIn("https://getpelican.com/", catalog)
+        self.assertIn("Python 정적 사이트 생성기(SSG) 모음", archive)
+        self.assertIn("Python 정적 사이트 생성기(SSG) 모음", bookmark_category)
+        self.assertFalse((output / "posts" / "python-ssg" / "index.html").exists())
 
     def test_existing_unmanaged_output_is_preserved(self) -> None:
         output = self.root / "output"

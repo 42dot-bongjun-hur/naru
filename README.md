@@ -6,9 +6,8 @@ Naru는 여러 사이트가 하나의 정적 사이트 생성 엔진을 공유�
 콘텐츠, 테마와 빌드 결과물은 각 프로젝트 안에서 독립적으로 관리하기 위한
 Python 기반 생성기 프로젝트입니다.
 
-**예제 사이트:** [naru.devbj.com](https://naru.devbj.com) — Markdown 블로그와
-`bookmark` 카테고리의 Markdown 모음글을 볼 수 있습니다. 구조화된 JSON 카탈로그도
-선택해 사용할 수 있습니다.
+**예제 사이트:** [naru.devbj.com](https://naru.devbj.com) — Markdown 소개글과
+북마크 표를 같은 카탈로그 템플릿으로 렌더링하는 예제를 볼 수 있습니다.
 
 > 0.1 시험판: 기본 템플릿과 최소 설정을 제공하며, 정해진 페이지 구조를
 > 사용합니다.
@@ -31,15 +30,15 @@ Naru는 콘텐츠를 JSON 또는 Markdown으로 작성하고, 배포할 수 있�
 
 | 용도 | 입력 | 생성 결과 |
 | --- | --- | --- |
-| Markdown 콘텐츠 | `content/posts/*.md`와 YAML front matter | `/posts/슬러그/` 페이지 및 `/posts/` 통합 목록 |
+| Markdown 콘텐츠 | `content/posts/*.md`와 YAML front matter | 글은 `/posts/슬러그/`, `layout: catalog`은 `/슬러그/`; 모두 `/posts/` 통합 목록에 표시 |
 | JSON 카탈로그 (선택) | `content/data/*.json`의 `page_info`와 `sites` | `/슬러그/` 페이지 및 통합 목록 |
 | 카테고리·태그 | Markdown front matter의 `category`, `tags`; JSON `page_info.category` | 홈과 `/category/슬러그/`, `/tags/태그/` 아카이브 |
 | 일반 페이지 | `content/pages/*.md` | `/슬러그/` 페이지 |
 
-북마크는 `category: bookmark`인 Markdown 글로 간단히 작성하거나 JSON 카탈로그로
-관리할 수 있습니다. 두 형식 모두 홈과 `/posts/` 목록에 같은 카드로 표시되고,
-`bookmark`, `blog` 같은 카테고리별 목록에도 모입니다. JSON 방식은 구조화된 필드와
-전용 카탈로그 화면이 필요할 때 선택하면 됩니다.
+북마크는 `category: bookmark`인 Markdown 글로 작성할 수 있습니다. YAML front
+matter에 `layout: catalog`와 `sites`를 지정하면 소개와 안내는 Markdown으로 쓰고,
+링크 목록은 JSON 입력과 같은 카탈로그 템플릿으로 렌더링합니다. JSON 카탈로그도
+기존 형식으로 계속 지원합니다.
 생성물은 GitHub Pages 등 정적 호스팅에 배포할 수 있으며, 이 저장소의 예제는
 `naru.devbj.com`으로 자동 배포하도록 구성되어 있습니다.
 
@@ -171,12 +170,13 @@ JSON의 최상위 `page_info`에는 글과 같은 제목, 슬러그, 설명, 게
 수정일, 태그와 함께 `links_checked_date`, `intro_guide` 등을 지정하고,
 `sites` 배열에는 각 항목의 `name`, `url`, `description`, `status`를
 넣습니다. Naru는 각 파일을 카탈로그 페이지로 빌드합니다. 배포 예제는 Python
-정적 사이트·문서 생성기를 `bookmark` 카테고리의 Markdown 글로 작성했습니다:
+정적 사이트·문서 생성기를 Markdown front matter와 본문으로 작성하고,
+JSON과 같은 카탈로그 템플릿을 사용합니다:
 [`examples/basic-site/content/posts/python-ssg.md`](examples/basic-site/content/posts/python-ssg.md).
 같은 목록을 JSON으로 작성한 대안은
 [`examples/basic-site/alternatives/python-ssg.json`](examples/basic-site/alternatives/python-ssg.json)에
-있습니다. JSON 방식을 시험하려면 이 파일을 `content/data/`로 옮기고 Markdown 예제를
-제거하면 됩니다.
+있습니다. JSON 방식을 시험하려면 이 파일을 `content/data/`로 복사하고 Markdown
+예제의 확장자를 `.md.example`로 바꾸면 됩니다.
 
 카테고리, 광고, URL 경로 등을 생략하면 기본값을 사용합니다. 생략 가능한
 필드라도 값을 지정했다면 유효해야 하며, 알 수 없는 필드는 오류입니다.

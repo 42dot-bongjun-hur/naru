@@ -45,8 +45,9 @@ Naru는 다른 사이트의 출력이나 입력 디렉터리를 빌드 결과로
 홈의 최신 콘텐츠, `/posts/` 통합 목록, 카테고리 목록에 반영됩니다. JSON
 카탈로그의 기본 카테고리는 `bookmark`이며, Markdown 글과 같은 목록 카드로
 표시되고 카테고리 허브와 RSS에도 포함됩니다.
-현재 배포 예제는 `bookmark` 카테고리의 Markdown 글이며, 같은 데이터를 JSON으로
-표현한 대안은 `examples/basic-site/alternatives/python-ssg.json`에 있습니다.
+현재 배포 예제는 YAML front matter에 `layout: catalog`와 `sites`를 두고
+Markdown 본문을 소개글로 사용합니다. 두 입력 형식 모두 같은 카탈로그 템플릿을
+사용하며, JSON 대안은 `examples/basic-site/alternatives/python-ssg.json`에 있습니다.
 
 현재 엔진은 모듈 전역 설정을 사용합니다. CLI는 빌드마다 별도 Python
 프로세스를 실행해 사이트 설정이 섞이지 않도록 합니다.
