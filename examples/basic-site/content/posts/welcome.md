@@ -26,7 +26,7 @@ Naru 블로그 글은 Markdown 파일로 작성합니다. 파일 맨 위의 YAML
 - Markdown 문법을 간단히 소개합니다.
 - 블로그 글은 `blog` 카테고리에 모입니다.
 
-[Python SSG 북마크 모음](/python-ssg/)도 확인해 보세요.
+[Python SSG 북마크 모음](/posts/python-ssg/)도 확인해 보세요.
 
 ## 코드 블록
 

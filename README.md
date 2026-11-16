@@ -7,7 +7,8 @@ Naru는 여러 사이트가 하나의 정적 사이트 생성 엔진을 공유�
 Python 기반 생성기 프로젝트입니다.
 
 **예제 사이트:** [naru.devbj.com](https://naru.devbj.com) — Markdown 블로그와
-JSON 북마크가 함께 표시되는 실제 배포 예제입니다.
+`bookmark` 카테고리의 Markdown 모음글을 볼 수 있습니다. 구조화된 JSON 카탈로그도
+선택해 사용할 수 있습니다.
 
 > 0.1 시험판: 기본 템플릿과 최소 설정을 제공하며, 정해진 페이지 구조를
 > 사용합니다.
@@ -16,9 +17,9 @@ JSON 북마크가 함께 표시되는 실제 배포 예제입니다.
 
 - `naru.yml`을 이용한 사이트 설정과 출력 경로 분리
 - 패키지에 포함된 기본 템플릿과 스타일, 사이트별 템플릿 덮어쓰기
-- JSON 카탈로그를 HTML 링크·북마크 모음 페이지로 생성
 - Markdown 블로그 글과 페이지 생성
-- 블로그 글과 JSON 카탈로그를 홈, `/posts/` 콘텐츠 목록, 카테고리별 목록에 함께 표시
+- Markdown 글과 선택형 JSON 카탈로그를 홈, `/posts/` 콘텐츠 목록,
+  카테고리별 목록에 함께 표시
 - 카테고리·태그 아카이브, RSS, sitemap, robots.txt 생성
 - 정적 파일과 글에 첨부한 이미지 복사
 - 예제 사이트의 GitHub Actions → Pages 자동 배포
@@ -30,16 +31,15 @@ Naru는 콘텐츠를 JSON 또는 Markdown으로 작성하고, 배포할 수 있�
 
 | 용도 | 입력 | 생성 결과 |
 | --- | --- | --- |
-| 링크·북마크 모음 | `content/data/*.json`의 `page_info`와 `sites` | JSON 파일마다 `/슬러그/` 카탈로그 페이지 |
-| 블로그 | `content/posts/*.md`의 YAML front matter와 Markdown | `/posts/슬러그/` 글 페이지 및 JSON 카탈로그와 통합된 `/posts/` 목록 |
-| 카테고리·태그 | 글 front matter의 `category`, `tags`; JSON `page_info.category` | 홈의 카테고리별 목록과 `/category/슬러그/`, `/tags/태그/` 아카이브 |
+| Markdown 콘텐츠 | `content/posts/*.md`와 YAML front matter | `/posts/슬러그/` 페이지 및 `/posts/` 통합 목록 |
+| JSON 카탈로그 (선택) | `content/data/*.json`의 `page_info`와 `sites` | `/슬러그/` 페이지 및 통합 목록 |
+| 카테고리·태그 | Markdown front matter의 `category`, `tags`; JSON `page_info.category` | 홈과 `/category/슬러그/`, `/tags/태그/` 아카이브 |
 | 일반 페이지 | `content/pages/*.md` | `/슬러그/` 페이지 |
 
-예를 들어 북마크나 참고 링크를 JSON 카탈로그로 정리하면서, 같은 사이트에
-`blog` 카테고리의 Markdown 글을 함께 둘 수 있습니다. 두 콘텐츠 유형은
-홈과 `/posts/`의 전체 콘텐츠 목록에 같은 방식으로 표시되며, JSON 카탈로그는
-`bookmark`, 블로그 글은 `blog` 같은 카테고리별 목록과 아카이브에 모을 수 있습니다. JSON은 그대로
-노출되지 않고 Naru가 사이트 템플릿에 맞는 HTML 페이지로 변환합니다.
+북마크는 `category: bookmark`인 Markdown 글로 간단히 작성하거나 JSON 카탈로그로
+관리할 수 있습니다. 두 형식 모두 홈과 `/posts/` 목록에 같은 카드로 표시되고,
+`bookmark`, `blog` 같은 카테고리별 목록에도 모입니다. JSON 방식은 구조화된 필드와
+전용 카탈로그 화면이 필요할 때 선택하면 됩니다.
 생성물은 GitHub Pages 등 정적 호스팅에 배포할 수 있으며, 이 저장소의 예제는
 `naru.devbj.com`으로 자동 배포하도록 구성되어 있습니다.
 
@@ -166,14 +166,17 @@ my-site/
 └── assets/                   # 스타일과 이미지 (선택)
 ```
 
-`content/data/*.json`에는 링크 모음처럼 구조화된 카탈로그를 둡니다.
+`content/data/*.json`에는 링크 모음처럼 구조화된 카탈로그를 선택적으로 둡니다.
 JSON의 최상위 `page_info`에는 글과 같은 제목, 슬러그, 설명, 게시일,
 수정일, 태그와 함께 `links_checked_date`, `intro_guide` 등을 지정하고,
 `sites` 배열에는 각 항목의 `name`, `url`, `description`, `status`를
-넣습니다. Naru는 각 파일을 카탈로그 페이지로 빌드합니다. 예제는 Python
-정적 사이트·문서 생성기를 모은
-[`examples/basic-site/content/data/python-ssg.json`](examples/basic-site/content/data/python-ssg.json)이며,
-`python-ssg/index.html`로 출력됩니다.
+넣습니다. Naru는 각 파일을 카탈로그 페이지로 빌드합니다. 배포 예제는 Python
+정적 사이트·문서 생성기를 `bookmark` 카테고리의 Markdown 글로 작성했습니다:
+[`examples/basic-site/content/posts/python-ssg.md`](examples/basic-site/content/posts/python-ssg.md).
+같은 목록을 JSON으로 작성한 대안은
+[`examples/basic-site/alternatives/python-ssg.json`](examples/basic-site/alternatives/python-ssg.json)에
+있습니다. JSON 방식을 시험하려면 이 파일을 `content/data/`로 옮기고 Markdown 예제를
+제거하면 됩니다.
 
 카테고리, 광고, URL 경로 등을 생략하면 기본값을 사용합니다. 생략 가능한
 필드라도 값을 지정했다면 유효해야 하며, 알 수 없는 필드는 오류입니다.

@@ -190,11 +190,10 @@ class BuildConfigurationTests(unittest.TestCase):
             Path(__file__).resolve().parents[1]
             / "examples"
             / "basic-site"
-            / "content"
-            / "data"
+            / "alternatives"
             / "python-ssg.json"
         )
-        (data_dir / example.name).write_text(
+        (data_dir / "python-ssg.json").write_text(
             example.read_text(encoding="utf-8"), encoding="utf-8"
         )
         post_example = (
@@ -207,6 +206,17 @@ class BuildConfigurationTests(unittest.TestCase):
         )
         (self.root / "content" / "posts" / post_example.name).write_text(
             post_example.read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        bookmark_example = (
+            Path(__file__).resolve().parents[1]
+            / "examples"
+            / "basic-site"
+            / "content"
+            / "posts"
+            / "python-ssg.md"
+        )
+        (self.root / "content" / "posts" / bookmark_example.name).write_text(
+            bookmark_example.read_text(encoding="utf-8"), encoding="utf-8"
         )
         (self.root / "static" / "tools").rmdir()
 
@@ -272,6 +282,10 @@ class BuildConfigurationTests(unittest.TestCase):
         self.assertIn("<h1>콘텐츠 목록</h1>", all_content)
         self.assertIn("Markdown 기본 문법", all_content)
         self.assertIn("Python 정적 사이트 생성기(SSG) 모음", all_content)
+        markdown_bookmark = (
+            output / "posts" / "python-ssg" / "index.html"
+        ).read_text(encoding="utf-8")
+        self.assertIn("https://getpelican.com/", markdown_bookmark)
         self.assertIn(">Blog</span>", all_content)
         self.assertIn(">Bookmarks</span>", all_content)
         self.assertIn("https://example.com/python-ssg/", feed)
