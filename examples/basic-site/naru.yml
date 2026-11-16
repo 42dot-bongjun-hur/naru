@@ -18,8 +18,8 @@ category_labels:
   BOOKMARK: Bookmarks
 category_redirects: {}
 home_category_groups:
-  - [Blog, NOTES, [BLOG], pen]
-  - [Bookmarks, COLLECTIONS, [BOOKMARK], briefcase]
+  - [Posts, BLOG POSTS, [BLOG], pen]
+  - [Collections, BOOKMARKS, [BOOKMARK], briefcase]
 home_category_order: [BLOG, BOOKMARK]
 home_posts_per_category: 8
 home_recent_posts: 10

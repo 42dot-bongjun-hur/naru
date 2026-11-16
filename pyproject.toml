@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "naru-sitegen"
 version = "0.1.3"
-description = "A shared Python static site generator for independent websites"
+description = "Python static site generator for Markdown blogs and JSON link catalogs"
 readme = "README.md"
 requires-python = ">=3.11"
 keywords = ["static-site-generator", "markdown", "website"]
@@ -24,6 +24,11 @@ dependencies = [
   "Markdown>=3.7",
   "PyYAML>=6.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/bjnhur/naru"
+Repository = "https://github.com/bjnhur/naru"
+Example = "https://naru.devbj.com"
 
 [project.optional-dependencies]
 dev = [
