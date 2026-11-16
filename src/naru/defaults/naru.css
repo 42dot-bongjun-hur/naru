@@ -121,6 +121,34 @@ table {
   border-collapse: collapse;
 }
 
+.catalog-table {
+  width: 100%;
+  min-width: 52rem;
+}
+
+.catalog-table th:first-child,
+.catalog-table td.col-rank {
+  width: 3.5rem;
+  white-space: nowrap;
+}
+
+.catalog-table th:nth-child(2),
+.catalog-table td.col-name {
+  min-width: 8rem;
+  white-space: nowrap;
+}
+
+.catalog-table th:nth-child(3),
+.catalog-table td.col-url-action {
+  min-width: 34rem;
+}
+
+.catalog-table th:last-child,
+.catalog-table td.col-status {
+  min-width: 8rem;
+  white-space: nowrap;
+}
+
 th, td {
   padding: 0.5rem;
   text-align: left;

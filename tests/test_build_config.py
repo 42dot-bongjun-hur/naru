@@ -263,6 +263,7 @@ class BuildConfigurationTests(unittest.TestCase):
         self.assertIn("Pelican", catalog)
         self.assertIn("https://getpelican.com/", catalog)
         self.assertIn("MkDocs", catalog)
+        self.assertNotIn('class="ad-row"', catalog)
         self.assertIn("example.com/python-ssg/", sitemap)
         self.assertIn("<strong>두 개의 별표</strong>", post)
         self.assertIn('<code class="language-python">', post)
@@ -319,7 +320,7 @@ class BuildConfigurationTests(unittest.TestCase):
             output / "category" / "bookmark" / "index.html"
         ).read_text(encoding="utf-8")
         self.assertIn("<dl class=\"catalog-meta\">", catalog)
-        self.assertIn("<table>", catalog)
+        self.assertIn('<table class="catalog-table">', catalog)
         self.assertIn("용도에 따라 선택하기", catalog)
         self.assertIn(
             "2026-11-16 공식 사이트 링크와 프로젝트 소개를 확인했습니다.",

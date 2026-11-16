@@ -506,7 +506,7 @@ def build_catalog(item, nav_items_list, category_nav_list, tpl_cat, tpl_head, tp
         </tr>"""
         entries.append(entry)
 
-        if i == 2 or i == 5:
+        if AD_SLOT_MID and i in {2, 5}:
             entries.append(f'<tr class="ad-row"><td colspan="4"><div class="ad-in-table">{render_ad(AD_SLOT_MID)}</div></td></tr>')
 
     rendered_cat = tpl_cat.replace("{{ HEAD_HTML }}", head_html) \
