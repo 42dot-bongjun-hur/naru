@@ -259,6 +259,10 @@ th, td {
   transition: border-color 120ms ease, background-color 120ms ease;
 }
 
+main > .home-article-card + .home-article-card {
+  margin-top: 0.75rem;
+}
+
 .home-article-card strong,
 .home-article-description {
   display: block;
