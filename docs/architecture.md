@@ -42,7 +42,9 @@ Naru는 다른 사이트의 출력이나 입력 디렉터리를 빌드 결과로
 `content/posts/`와 `content/pages/`의 Markdown 외에도
 `content/data/*.json`의 카탈로그를 읽습니다. 카탈로그는 필수 메타데이터를
 `page_info`에, 목록 항목을 `sites` 배열에 담으며 콘텐츠 페이지, 사이트맵과
-홈의 최신 콘텐츠 목록에 반영됩니다. Python 정적 사이트 생성기를 소개하는
+홈의 최신 콘텐츠·카테고리 목록에 반영됩니다. JSON 카탈로그의 기본 카테고리는
+`bookmark`이며, Markdown 글과 함께 카테고리 허브와 RSS에 포함됩니다.
+Python 정적 사이트 생성기를 소개하는
 작동 예시는 `examples/basic-site/content/data/python-ssg.json`에 있습니다.
 
 현재 엔진은 모듈 전역 설정을 사용합니다. CLI는 빌드마다 별도 Python

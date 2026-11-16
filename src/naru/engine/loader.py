@@ -344,6 +344,7 @@ def load_all_contents(data_dir: Path, posts_dir: Path, pages_dir: Path | None = 
             p_info = data.get("page_info", {})
             if not isinstance(p_info, dict):
                 raise ValueError(f"{json_file}: page_info must be an object")
+            p_info.setdefault("category", "bookmark")
             p_info = normalize_metadata(p_info, str(json_file))
             slug = p_info["slug"]
             if not isinstance(data.get("sites", []), list):
@@ -369,7 +370,8 @@ def load_all_contents(data_dir: Path, posts_dir: Path, pages_dir: Path | None = 
                 "badge": f"#{slug}",
                 "stat_text": f"{len(data.get('sites', []))}개 사이트",
                 "action_text": "목록 확인하기 →",
-                "raw_data": data
+                "raw_data": data,
+                "meta": p_info,
             })
 
     items.extend(load_markdown_contents(posts_dir, "post"))

@@ -189,6 +189,16 @@ def build_tools_page(nav_html, footer_html):
     output_path.write_text(rendered, encoding="utf-8")
     print(f"[OK] {output_path.relative_to(OUT_DIR)} 공통 헤더/푸터 적용 완료")
 
+
+def content_category(item, default=""):
+    category = item.get("meta", {}).get("category")
+    if item.get("type") == "catalog":
+        category = category or "bookmark"
+    else:
+        category = category or default
+    return str(category).strip().upper()
+
+
 def build_home(items, tpl_home, tpl_head, tpl_nav, footer_html, docs_assets, site_domain, top_nav_links, hubs):
     title = SITE_TAGLINE
     description = SITE_DESCRIPTION
@@ -204,7 +214,9 @@ def build_home(items, tpl_home, tpl_head, tpl_nav, footer_html, docs_assets, sit
         og_image=f"{SITE_ORIGIN}{BASE_URL}/assets/{og_filename}"
     )
 
-    articles = [item for item in items if item["type"] == "post"]
+    articles = [
+        item for item in items if item["type"] in {"post", "catalog"}
+    ]
     # 최신 업데이트 날짜 추출하여 상단바 우측 배지로 표시
     all_dates = [it.get("updated_date", "") for it in items if it.get("updated_date")]
     latest_date = max(all_dates) if all_dates else ""
@@ -216,7 +228,7 @@ def build_home(items, tpl_home, tpl_head, tpl_nav, footer_html, docs_assets, sit
 
     grouped_articles = {}
     for item in articles:
-        category = str(item.get("meta", {}).get("category", "NOTE")).upper()
+        category = content_category(item, "NOTE")
         grouped_articles.setdefault(category, []).append(item)
 
     category_order = [str(category).strip().upper() for category in HOME_CATEGORY_ORDER]
@@ -255,13 +267,13 @@ def build_home(items, tpl_home, tpl_head, tpl_nav, footer_html, docs_assets, sit
         if len(category_articles) >= HOME_POSTS_PER_CATEGORY and hub:
             more_link = (
                 f'<a class="home-category-more" href="{content_path(hub)}">'
-                f'더 보기 <span>({len(category_articles)}개 글)</span> →</a>'
+                f'더 보기 <span>({len(category_articles)}개 항목)</span> →</a>'
             )
         category_sections[category] = f"""
-        <section class="home-article-category" aria-label="{escape(label)} 글">
+        <section class="home-article-category" aria-label="{escape(label)} 콘텐츠">
           <div class="home-category-heading">
             <h2>{escape(label)}</h2>
-            <span>{len(category_articles):02d} POSTS</span>
+            <span>{len(category_articles):02d} ITEMS</span>
           </div>
           <div class="home-article-grid">{"".join(cards)}
           </div>
@@ -271,11 +283,11 @@ def build_home(items, tpl_home, tpl_head, tpl_nav, footer_html, docs_assets, sit
     recent_items = sorted(articles, key=lambda item: item.get("updated_date", ""), reverse=True)[:HOME_RECENT_POSTS]
     recent_rows = "".join(f"""
           <li><a href="{content_path(item)}">
-            <span class="home-recent-date">{escape(item.get("updated_date", ""))[5:]}</span>
+            <span class="home-recent-date">{escape(item.get("updated_date", ""))[5:]} · {escape(CATEGORY_LABELS.get(content_category(item), content_category(item)))}</span>
             <strong>{escape(item["title"])}</strong>
           </a></li>""" for item in recent_items)
-    recent_posts_html = f"""<aside class="home-recent" aria-label="최근 글">
-        <div class="home-category-heading"><h2>최근 글</h2><span>LATEST</span></div>
+    recent_posts_html = f"""<aside class="home-recent" aria-label="최근 콘텐츠">
+        <div class="home-category-heading"><h2>최근 콘텐츠</h2><span>LATEST</span></div>
         <ul class="home-recent-list">{recent_rows}
         </ul>
       </aside>""" if recent_items else ""
@@ -318,7 +330,7 @@ def build_home(items, tpl_home, tpl_head, tpl_nav, footer_html, docs_assets, sit
               <span class="home-group-kicker">{escape(group_kicker)}</span>
               <h2 id="home-group-{icon_name}">{escape(group_label)}</h2>
             </div>
-            <span class="home-group-count">{group_count:02d} POSTS</span>
+            <span class="home-group-count">{group_count:02d} ITEMS</span>
           </div>
           {utility_link}
           <div class="home-group-categories">
@@ -561,12 +573,14 @@ HUB_CATEGORIES = {
 
 
 def build_hubs(items):
-    """콘텐츠가 있는 모든 게시글 카테고리에 허브 아이템을 만든다."""
-    posts = [it for it in items if it["type"] == "post"]
+    """게시글과 JSON 카탈로그의 카테고리 허브를 만든다."""
+    categorized_items = [
+        item for item in items if item["type"] in {"post", "catalog"}
+    ]
     categories = sorted({
-        str(post.get("meta", {}).get("category", "")).strip()
-        for post in posts
-        if str(post.get("meta", {}).get("category", "")).strip()
+        content_category(item)
+        for item in categorized_items
+        if content_category(item)
     }, key=str.casefold)
     configured = dict(HUB_CATEGORIES)
     used_slugs = {str(item.get("slug", "")).lower() for item in items}
@@ -581,14 +595,18 @@ def build_hubs(items):
         display_name = CATEGORY_LABELS.get(category, category_label)
         configured[category] = {
             "slug": slug,
-            "title": f"{display_name} 노트: {SITE_NAME} 기술 기록 모음",
-            "nav_title": f"{display_name} 노트",
-            "description": f"{SITE_NAME}에 기록한 {display_name} 관련 기술 메모와 참고 자료를 한곳에서 확인할 수 있습니다.",
+            "title": f"{display_name}: {SITE_NAME} 콘텐츠 모음",
+            "nav_title": display_name,
+            "description": f"{SITE_NAME}의 {display_name} 카테고리 콘텐츠를 모았습니다.",
         }
 
     hubs = []
     for category, info in configured.items():
-        members = [p for p in posts if str(p.get("meta", {}).get("category", "")).upper() == category]
+        members = [
+            item
+            for item in categorized_items
+            if content_category(item) == category
+        ]
         if not members:
             continue
         rows = "".join(
@@ -1065,12 +1083,17 @@ def main():
         build_tools_page(nav_html, footer_html)
 
     all_posts = [it for it in items if it["type"] == "post"]
-    category_nav_items = [f'<li><a href="{site_root_path()}">🏠 전체 노트</a></li>']
+    categorized_items = [
+        item for item in items if item["type"] in {"post", "catalog"}
+    ]
+    category_nav_items = [
+        f'<li><a href="{site_root_path()}">🏠 전체 콘텐츠</a></li>'
+    ]
     for hub in hubs:
-        count = len([
-            p for p in all_posts
-            if str(p.get("meta", {}).get("category", "")).upper() == hub["category"]
-        ])
+        count = sum(
+            content_category(item) == hub["category"]
+            for item in categorized_items
+        )
         category_nav_items.append(
             f'<li><a href="{content_path(hub)}">{escape(hub["nav_title"])}'
             f' <span class="sidebar-count">{count}</span></a></li>'
@@ -1109,7 +1132,7 @@ def main():
 
     build_category_redirects()
     generate_sitemap(items + hubs, archive_paths)
-    generate_rss(all_posts)
+    generate_rss([item for item in items if item["type"] != "page"])
     generate_robots()
 
     print(

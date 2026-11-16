@@ -180,7 +180,8 @@ class BuildConfigurationTests(unittest.TestCase):
 
     def test_python_ssg_catalog_example_builds_as_a_catalog_page(self) -> None:
         self.config.write_text(
-            "site_name: Catalog Site\nsite_origin: https://example.com\n",
+            "site_name: Catalog Site\nsite_origin: https://example.com\n"
+            "category_labels:\n  BLOG: Blog\n  BOOKMARK: Bookmarks\n",
             encoding="utf-8",
         )
         data_dir = self.root / "content" / "data"
@@ -195,6 +196,17 @@ class BuildConfigurationTests(unittest.TestCase):
         )
         (data_dir / example.name).write_text(
             example.read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        post_example = (
+            Path(__file__).resolve().parents[1]
+            / "examples"
+            / "basic-site"
+            / "content"
+            / "posts"
+            / "welcome.md"
+        )
+        (self.root / "content" / "posts" / post_example.name).write_text(
+            post_example.read_text(encoding="utf-8"), encoding="utf-8"
         )
         (self.root / "static" / "tools").rmdir()
 
@@ -221,10 +233,26 @@ class BuildConfigurationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
 
         output = self.root / "output"
+        home = (output / "index.html").read_text(encoding="utf-8")
         catalog = (output / "python-ssg" / "index.html").read_text(
             encoding="utf-8"
         )
+        post = (output / "posts" / "markdown-basics" / "index.html").read_text(
+            encoding="utf-8"
+        )
+        bookmark_category = (
+            output / "category" / "bookmark" / "index.html"
+        ).read_text(encoding="utf-8")
+        blog_category = (output / "category" / "blog" / "index.html").read_text(
+            encoding="utf-8"
+        )
         sitemap = (output / "sitemap.xml").read_text(encoding="utf-8")
+        feed = (output / "rss.xml").read_text(encoding="utf-8")
+        self.assertIn("최근 콘텐츠", home)
+        self.assertIn("Python 정적 사이트 생성기(SSG) 모음", home)
+        self.assertIn("Markdown 기본 문법", home)
+        self.assertIn("Bookmarks", home)
+        self.assertIn("Blog", home)
         self.assertIn("<h1>Python 정적 사이트 생성기(SSG) 모음</h1>", catalog)
         self.assertIn("<dd>2026-11-16</dd>", catalog)
         self.assertIn("공식 사이트 링크와 프로젝트 소개를 확인했습니다.", catalog)
@@ -234,6 +262,11 @@ class BuildConfigurationTests(unittest.TestCase):
         self.assertIn("https://getpelican.com/", catalog)
         self.assertIn("MkDocs", catalog)
         self.assertIn("example.com/python-ssg/", sitemap)
+        self.assertIn("<strong>두 개의 별표</strong>", post)
+        self.assertIn('<code class="language-python">', post)
+        self.assertIn("Markdown 기본 문법", blog_category)
+        self.assertIn("Python 정적 사이트 생성기(SSG) 모음", bookmark_category)
+        self.assertIn("https://example.com/python-ssg/", feed)
 
     def test_existing_unmanaged_output_is_preserved(self) -> None:
         output = self.root / "output"

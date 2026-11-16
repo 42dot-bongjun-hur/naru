@@ -15,10 +15,12 @@ rss_title: Naru Example
 rss_description: Python static site generators and a site built with Naru.
 category_labels:
   BLOG: Blog
+  BOOKMARK: Bookmarks
 category_redirects: {}
 home_category_groups:
   - [Blog, NOTES, [BLOG], pen]
-home_category_order: [BLOG]
+  - [Bookmarks, COLLECTIONS, [BOOKMARK], briefcase]
+home_category_order: [BLOG, BOOKMARK]
 home_posts_per_category: 8
 home_recent_posts: 10
 home_max_ads: 0

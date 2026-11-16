@@ -55,6 +55,12 @@ def normalize_metadata(raw: dict, source_name: str) -> dict:
         raise ValueError(f"{source_name}: tags must be a list of strings")
     metadata["tags"] = [tag.strip() for tag in tags if tag.strip()]
 
+    if "category" in metadata:
+        category = metadata["category"]
+        if not isinstance(category, str) or not category.strip():
+            raise ValueError(f"{source_name}: category must be a non-empty string")
+        metadata["category"] = category.strip()
+
     links_checked_date = metadata.get("links_checked_date", "")
     metadata["links_checked_date"] = (
         normalize_date(links_checked_date, "links_checked_date", source_name)
