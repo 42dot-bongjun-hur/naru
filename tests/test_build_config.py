@@ -178,6 +178,63 @@ class BuildConfigurationTests(unittest.TestCase):
         self.assertTrue((self.root / "output" / "assets" / "naru.css").is_file())
         self.assertFalse((self.root / "static").exists())
 
+    def test_python_ssg_catalog_example_builds_as_a_catalog_page(self) -> None:
+        self.config.write_text(
+            "site_name: Catalog Site\nsite_origin: https://example.com\n",
+            encoding="utf-8",
+        )
+        data_dir = self.root / "content" / "data"
+        data_dir.mkdir(parents=True)
+        example = (
+            Path(__file__).resolve().parents[1]
+            / "examples"
+            / "basic-site"
+            / "content"
+            / "data"
+            / "python-ssg.json"
+        )
+        (data_dir / example.name).write_text(
+            example.read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        (self.root / "static" / "tools").rmdir()
+
+        env = os.environ.copy()
+        env["PYTHONUTF8"] = "1"
+        env["PYTHONPATH"] = str(EXAMPLE_CONFIG.parents[2] / "src")
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "naru",
+                "build",
+                "--site-root",
+                str(self.root),
+                "--output",
+                "output",
+            ],
+            env=env,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+        output = self.root / "output"
+        catalog = (output / "python-ssg" / "index.html").read_text(
+            encoding="utf-8"
+        )
+        sitemap = (output / "sitemap.xml").read_text(encoding="utf-8")
+        self.assertIn("<h1>Python 정적 사이트 생성기(SSG) 모음</h1>", catalog)
+        self.assertIn("<dd>2026-11-16</dd>", catalog)
+        self.assertIn("공식 사이트 링크와 프로젝트 소개를 확인했습니다.", catalog)
+        self.assertIn("catalog-guide-section", catalog)
+        self.assertIn('"@type": "CollectionPage"', catalog)
+        self.assertIn("Pelican", catalog)
+        self.assertIn("https://getpelican.com/", catalog)
+        self.assertIn("MkDocs", catalog)
+        self.assertIn("example.com/python-ssg/", sitemap)
+
     def test_existing_unmanaged_output_is_preserved(self) -> None:
         output = self.root / "output"
         output.mkdir()

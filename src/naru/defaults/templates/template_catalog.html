@@ -6,6 +6,12 @@
   <main>
     <h1>{{ TITLE }}</h1>
     <p>{{ DESCRIPTION }}</p>
+    <dl class="catalog-meta">
+      <div><dt>게시일</dt><dd>{{ PUBLISHED_DATE }}</dd></div>
+      <div><dt>수정일</dt><dd>{{ UPDATED_DATE }}</dd></div>
+      <div><dt>링크 확인일</dt><dd>{{ LINKS_CHECKED_DATE }}</dd></div>
+      <div><dt>관리 메모</dt><dd>{{ MAINTENANCE_NOTE }}</dd></div>
+    </dl>
     {{ INTRO_GUIDE_HTML }}
     <table>
       <thead><tr><th>번호</th><th>이름</th><th>주소</th><th>상태</th></tr></thead>

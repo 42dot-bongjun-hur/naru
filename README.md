@@ -13,15 +13,35 @@ Python 기반 생성기 프로젝트입니다.
 
 - `naru.yml`을 이용한 사이트 설정과 출력 경로 분리
 - 패키지에 포함된 기본 템플릿과 스타일, 사이트별 템플릿 덮어쓰기
-- Markdown과 YAML front matter를 이용한 글·페이지 생성
-- 카테고리·태그 아카이브, RSS, sitemap, robots.txt 생성
+- JSON 카탈로그를 HTML 링크·북마크 모음 페이지로 생성
+- Markdown 블로그 글과 페이지 생성
+- 글의 카테고리와 태그별 아카이브, RSS, sitemap, robots.txt 생성
 - 정적 파일과 글에 첨부한 이미지 복사
+- 예제 사이트의 GitHub Actions → Pages 자동 배포
+
+## 어떤 사이트를 만들 수 있나요?
+
+Naru는 콘텐츠를 JSON 또는 Markdown으로 작성하고, 배포할 수 있는 정적 HTML
+사이트를 생성합니다.
+
+| 용도 | 입력 | 생성 결과 |
+| --- | --- | --- |
+| 링크·북마크 모음 | `content/data/*.json`의 `page_info`와 `sites` | JSON 파일마다 `/슬러그/` 카탈로그 페이지 |
+| 블로그 | `content/posts/*.md`의 YAML front matter와 Markdown | `/posts/슬러그/` 글 페이지 |
+| 카테고리·태그 | 글 front matter의 `category`, `tags` | `/category/슬러그/`, `/tags/태그/` 아카이브 |
+| 일반 페이지 | `content/pages/*.md` | `/슬러그/` 페이지 |
+
+예를 들어 북마크나 참고 링크를 JSON 카탈로그로 정리하면서, 같은 사이트에
+Markdown 블로그 글과 카테고리별 목록을 함께 둘 수 있습니다. JSON은 그대로
+노출되지 않고 Naru가 사이트 템플릿에 맞는 HTML 페이지로 변환합니다.
+생성물은 GitHub Pages 등 정적 호스팅에 배포할 수 있으며, 이 저장소의 예제는
+`naru.devbj.com`으로 자동 배포하도록 구성되어 있습니다.
 
 ## 프로젝트 구조
 
 ```text
 naru/
-├── .github/workflows/ci.yml
+├── .github/workflows/            # CI 및 예제 사이트 배포
 ├── docs/                       # 설계 및 사용자 문서
 ├── examples/basic-site/        # 사이트 설정과 콘텐츠 예시
 ├── src/naru/                   # 설치 가능한 Python 패키지와 CLI
@@ -39,6 +59,13 @@ Python 3.11 이상이 필요합니다.
 ```powershell
 python -m pip install "naru-sitegen==0.1.3"
 ```
+
+> [!IMPORTANT]
+> **자신의 사이트를 배포하기 전에 `naru.yml`의 `site_origin`을 반드시
+> 본인이 소유하고 DNS를 관리하는 도메인으로 바꾸세요.** 예제의
+> `https://naru.devbj.com`은 이 저장소의 데모 전용 도메인입니다. 그대로
+> 사용하면 생성되는 `CNAME`, canonical URL, RSS 링크도 데모 도메인을
+> 가리키므로 다른 사이트에 사용하면 안 됩니다.
 
 배포 패키지 이름은 `naru-sitegen`이며 Python 모듈과 CLI 이름은 `naru`입니다.
 각 사이트는 검증한 버전을 의존성 파일에 고정하고, 새 버전이 나왔을 때
@@ -106,6 +133,16 @@ site_origin: https://example.com
 python -m naru build --site-root . --output dist
 ```
 
+## 예제 사이트 배포
+
+`examples/basic-site`는 `https://naru.devbj.com`을 사용하며,
+`.github/workflows/deploy-example.yml`이 `main` 브랜치 push 또는 수동 실행 시
+Naru를 저장소 소스에서 설치해 사이트를 빌드하고 GitHub Pages에 배포합니다.
+이 예제의 DNS CNAME과 저장소 **Settings → Pages**의 **GitHub Actions** 배포
+소스 및 `naru.devbj.com` 사용자 지정 도메인은 설정되어 있습니다. 변경을
+`main`에 push하면 `https://naru.devbj.com`에 자동 배포됩니다.
+`naru.devbj.com`은 이 데모 전용이므로 다른 사이트 설정에 복사해 사용하지 마세요.
+
 글은 `content/posts/` 아래 Markdown 파일로 추가합니다. 폴더나 글이 없어도
 빈 사이트를 빌드할 수 있습니다. 템플릿, 스타일, 정적 파일은 필요할 때만
 사이트에서 제공합니다.
@@ -122,6 +159,15 @@ my-site/
 ├── static/                   # 정적 파일 (선택)
 └── assets/                   # 스타일과 이미지 (선택)
 ```
+
+`content/data/*.json`에는 링크 모음처럼 구조화된 카탈로그를 둡니다.
+JSON의 최상위 `page_info`에는 글과 같은 제목, 슬러그, 설명, 게시일,
+수정일, 태그와 함께 `links_checked_date`, `intro_guide` 등을 지정하고,
+`sites` 배열에는 각 항목의 `name`, `url`, `description`, `status`를
+넣습니다. Naru는 각 파일을 카탈로그 페이지로 빌드합니다. 예제는 Python
+정적 사이트·문서 생성기를 모은
+[`examples/basic-site/content/data/python-ssg.json`](examples/basic-site/content/data/python-ssg.json)이며,
+`python-ssg/index.html`로 출력됩니다.
 
 카테고리, 광고, URL 경로 등을 생략하면 기본값을 사용합니다. 생략 가능한
 필드라도 값을 지정했다면 유효해야 하며, 알 수 없는 필드는 오류입니다.

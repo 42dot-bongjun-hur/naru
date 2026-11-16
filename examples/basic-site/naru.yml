@@ -1,17 +1,18 @@
-site_name: Example Journal
-site_origin: https://example.com
-site_slogan_en: A small journal
-site_slogan_ko: 작은 기록
-site_tagline: Example Journal
-site_description: An example site.
+site_name: Naru Example
+# 이 저장소 데모 전용 도메인입니다. 다른 사이트에 복사할 때는 반드시 본인 도메인으로 바꾸세요.
+site_origin: https://naru.devbj.com
+site_slogan_en: Python Static Sites, Built with Naru
+site_slogan_ko: 파이썬 정적 사이트 생성기 모음
+site_tagline: Python SSG Directory · Naru Example
+site_description: A Python static site generator directory built with Naru.
 base_url: ""
 posts_url_prefix: /posts
 category_url_prefix: /category
 tag_url_prefix: /tags
 posts_per_page: 10
 rss_item_limit: 50
-rss_title: Example Journal
-rss_description: An example site.
+rss_title: Naru Example
+rss_description: Python static site generators and a site built with Naru.
 category_labels:
   BLOG: Blog
 category_redirects: {}
@@ -27,7 +28,7 @@ adsense_pub_id: ""
 ad_slot_top: ""
 ad_slot_mid: ""
 ad_slot_side: ""
-author_name: Example Author
-author_bio: An example author.
+author_name: Naru
+author_bio: A sample site demonstrating the Naru static site generator.
 author_notes: {}
-author_note_default: An example note.
+author_note_default: Built with Naru.
