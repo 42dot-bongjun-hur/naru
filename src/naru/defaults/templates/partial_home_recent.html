@@ -1,0 +1,13 @@
+{% if recent_entries %}
+<aside class="home-recent" aria-label="최근 콘텐츠">
+  <div class="home-category-heading"><h2>최근 콘텐츠</h2><span>LATEST</span></div>
+  <ul class="home-recent-list">
+    {% for entry in recent_entries %}
+    <li><a href="{{ content_url(entry.item) }}">
+      <span class="home-recent-date">{{ entry.item.updated_date[5:] }} · {{ entry.category_label }}</span>
+      <strong>{{ entry.item.title }}</strong>
+    </a></li>
+    {% endfor %}
+  </ul>
+</aside>
+{% endif %}

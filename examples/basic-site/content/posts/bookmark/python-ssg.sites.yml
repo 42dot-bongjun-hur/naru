@@ -1,0 +1,45 @@
+- id: naru
+  name: Naru
+  url: https://naru.devbj.com/
+  description: >-
+    한글 콘텐츠 작성에 익숙한 사용자를 위한 간단한 Python 정적 사이트
+    생성기입니다. Markdown 글과 페이지, 카테고리·태그, RSS와 사이트맵 등
+    사이트 운영에 필요한 기본 기능을 제공합니다.
+  status: active
+- id: pelican
+  name: Pelican
+  url: https://getpelican.com/
+  description: >-
+    Python으로 작성된 정적 사이트 생성기입니다. Markdown과 reStructuredText로
+    글과 페이지를 만들고 테마, 플러그인, RSS·Atom 피드를 사용할 수 있습니다.
+  status: active
+- id: lektor
+  name: Lektor
+  url: https://www.getlektor.com/
+  description: >-
+    구조화된 파일 기반 콘텐츠와 관리자 UI를 제공하는 Python 기반 CMS 겸 정적
+    사이트 생성기입니다. 사용자 정의 콘텐츠 모델과 플러그인을 지원합니다.
+  status: active
+- id: nikola
+  name: Nikola
+  url: https://getnikola.com/
+  description: >-
+    Python 3 정적 사이트 생성기로 블로그, 페이지, 다국어 사이트를 만들 수
+    있습니다. Markdown, reStructuredText, Jupyter Notebook 입력과 플러그인을
+    지원합니다.
+  status: active
+- id: mkdocs
+  name: MkDocs
+  url: https://www.mkdocs.org/
+  description: >-
+    Markdown 문서에서 프로젝트 문서 사이트를 생성하는 Python 도구입니다. YAML
+    설정과 테마·플러그인 생태계를 제공합니다.
+  status: active
+- id: sphinx
+  name: Sphinx
+  url: https://www.sphinx-doc.org/
+  description: >-
+    Python 프로젝트 문서에서 널리 쓰이는 문서 생성기입니다. reStructuredText와
+    MyST Markdown을 입력으로 사용하며 HTML, LaTeX, ePub 등 여러 형식으로
+    문서를 빌드합니다.
+  status: active

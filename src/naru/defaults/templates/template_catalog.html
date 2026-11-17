@@ -16,7 +16,7 @@
     <div class="catalog-table-wrap">
       <table class="catalog-table">
         <thead><tr><th>번호</th><th>이름</th><th>주소</th><th>상태</th></tr></thead>
-        <tbody>{{ ENTRIES_HTML }}</tbody>
+        <tbody>{% include "partial_catalog_entries.html" %}</tbody>
       </table>
     </div>
   </main>

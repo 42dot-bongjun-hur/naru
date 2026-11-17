@@ -5,7 +5,6 @@ slug: markdown-basics
 description: 제목, 강조, 링크, 목록, 코드 블록을 사용하는 기본 글입니다.
 published_date: 2026-11-16
 updated_date: 2026-11-16
-category: blog
 tags:
   - markdown
   - blog
@@ -14,7 +13,8 @@ tags:
 # Markdown으로 글 쓰기
 
 Naru 블로그 글은 Markdown 파일로 작성합니다. 파일 맨 위의 YAML front matter에
-제목, 주소 슬러그, 날짜, 카테고리와 태그를 지정하면 Naru가 페이지를 만듭니다.
+제목, 주소 슬러그, 날짜와 태그를 지정하면 Naru가 페이지를 만듭니다. 이 글의
+카테고리는 `blog` 폴더에서 가져옵니다.
 
 ## 글자 강조
 

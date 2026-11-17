@@ -21,8 +21,11 @@ classifiers = [
   "Topic :: Internet :: WWW/HTTP :: Site Management",
 ]
 dependencies = [
+  "Jinja2>=3.1",
   "Markdown>=3.7",
+  "pymdown-extensions>=10.14",
   "PyYAML>=6.0",
+  "watchfiles>=0.24",
 ]
 
 [project.urls]

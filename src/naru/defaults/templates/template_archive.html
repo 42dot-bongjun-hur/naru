@@ -6,7 +6,7 @@
   <main>
     <h1>{{ TITLE }}</h1>
     <p>{{ DESCRIPTION }}</p>
-    {{ ITEMS }}
+    {% include "partial_archive_items.html" %}
     <nav aria-label="페이지">{{ PAGINATION }}</nav>
   </main>
   {{ FOOTER_HTML }}

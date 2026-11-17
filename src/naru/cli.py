@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import argparse
-import os
-import subprocess
-import sys
+import tempfile
 from collections.abc import Sequence
 from pathlib import Path
 
 from . import __version__
-from .config import ConfigError, load_config
+from .config import BuildConfig, ConfigError, load_config
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -28,30 +26,87 @@ def create_parser() -> argparse.ArgumentParser:
         description="Build the site rooted at --site-root.",
     )
     build_parser.add_argument(
-        "--site-root",
-        type=Path,
-        default=Path.cwd(),
-        help="Site project directory (default: current directory).",
-    )
-    build_parser.add_argument(
         "--output",
         type=Path,
         help="Output directory (default: <site-root>/docs); empty or Naru-managed.",
     )
+    check_parser = commands.add_parser(
+        "check", help="Validate a site without changing its output."
+    )
+    serve_parser = commands.add_parser(
+        "serve", help="Preview a site and rebuild when source files change."
+    )
+    serve_parser.add_argument(
+        "--host", default="127.0.0.1", help="Preview bind address."
+    )
+    serve_parser.add_argument("--port", type=int, default=8000, help="Preview port.")
+    for subparser in (build_parser, check_parser, serve_parser):
+        subparser.add_argument(
+            "--site-root", type=Path, default=Path.cwd(),
+            help="Site project directory (default: current directory).",
+        )
+        subparser.add_argument(
+            "--site-origin",
+            help="Override site_origin from naru.yml with the published origin.",
+        )
+        subparser.add_argument(
+            "--base-url", help="Override base_url from naru.yml."
+        )
+        subparser.add_argument(
+            "--include-drafts", action="store_true", help="Include draft content."
+        )
+        subparser.add_argument(
+            "--include-future", action="store_true",
+            help="Include future-dated content.",
+        )
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = create_parser()
     args = parser.parse_args(argv)
-    if args.command == "build":
+    if args.command in {"build", "check", "serve"}:
         site_root = args.site_root.expanduser().resolve()
         if not site_root.is_dir():
             parser.error(f"site root does not exist: {site_root}")
         try:
-            load_config(site_root / "naru.yml")
+            overrides = {
+                key: value
+                for key, value in (
+                    ("site_origin", args.site_origin),
+                    ("base_url", args.base_url),
+                )
+                if value is not None
+            }
+            settings = load_config(site_root / "naru.yml", overrides=overrides)
         except ConfigError as error:
             parser.error(str(error))
+        if args.command == "serve":
+            from .serve import serve
+
+            if not 0 <= args.port <= 65535:
+                parser.error("port must be between 0 and 65535")
+            try:
+                serve(
+                    site_root, settings, overrides, args.host, args.port,
+                    args.include_drafts, args.include_future,
+                )
+            except (ValueError, OSError) as error:
+                parser.error(str(error))
+            return 0
+        if args.command == "check":
+            from .engine.build import build
+
+            try:
+                with tempfile.TemporaryDirectory(prefix="naru-check-") as temporary:
+                    build(BuildConfig(
+                        site_root, Path(temporary) / "output", settings,
+                        args.include_drafts, args.include_future,
+                    ))
+            except (ValueError, OSError) as error:
+                parser.error(str(error))
+            print("[OK] Site check complete; no site output was changed.")
+            return 0
         if args.output is not None:
             output_dir = args.output.expanduser()
             if not output_dir.is_absolute():
@@ -94,14 +149,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             marker.write_text(str(site_root), encoding="utf-8")
         except OSError as error:
             parser.error(f"cannot prepare output directory {output_dir}: {error}")
-        env = os.environ.copy()
-        env["NARU_SITE_ROOT"] = str(site_root)
-        env["NARU_OUTPUT_DIR"] = str(output_dir)
-        return subprocess.run(
-            [sys.executable, "-m", "naru.engine.build"],
-            env=env,
-            check=False,
-        ).returncode
+        from .engine.build import build
+
+        try:
+            build(BuildConfig(
+                site_root, output_dir, settings,
+                args.include_drafts, args.include_future,
+            ))
+        except (ValueError, OSError) as error:
+            parser.error(str(error))
+        return 0
     elif not argv:
         parser.print_help()
     return 0

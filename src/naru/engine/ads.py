@@ -1,4 +1,4 @@
-from .config import ADSENSE_PUB_ID
+from . import config as engine_config
 
 
 def render_ad(
@@ -12,7 +12,7 @@ def render_ad(
     full_width_value = "true" if full_width_responsive else "false"
     return f"""<ins class="adsbygoogle"
      style="display:block"
-     data-ad-client="{ADSENSE_PUB_ID}"
+     data-ad-client="{engine_config.ADSENSE_PUB_ID}"
      data-ad-slot="{slot_id}"
      data-ad-format="{ad_format}"
      data-full-width-responsive="{full_width_value}"></ins>
@@ -27,7 +27,7 @@ def render_infeed_ad(slot_id: str, layout_key: str = "") -> str:
     layout_attr = f'data-ad-layout-key="{layout_key}"' if layout_key else 'data-ad-format="fluid"'
     return f"""<ins class="adsbygoogle"
      style="display:block"
-     data-ad-client="{ADSENSE_PUB_ID}"
+     data-ad-client="{engine_config.ADSENSE_PUB_ID}"
      data-ad-slot="{slot_id}"
      {layout_attr}></ins>
 <script>

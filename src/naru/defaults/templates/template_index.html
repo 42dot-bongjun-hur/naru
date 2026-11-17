@@ -6,8 +6,8 @@
   <main>
     <h1>{{ SLOGAN_EN_PLAIN }}</h1>
     <p>{{ SLOGAN_KO }}</p>
-    {{ RECENT_POSTS }}
-    {{ HOME_CONTENT_SECTIONS }}
+    {% include "partial_home_recent.html" %}
+    {% include "partial_home_groups.html" %}
   </main>
   {{ FOOTER_HTML }}
 </body>
