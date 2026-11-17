@@ -1,18 +1,23 @@
 site_name: Naru Example
-# 이 저장소 데모 전용 도메인입니다. 다른 사이트에 복사할 때는 반드시 본인 도메인으로 바꾸세요.
-site_origin: https://naru.devbj.com
-site_slogan_en: Python Static Sites, Built with Naru
-site_slogan_ko: 파이썬 정적 사이트 생성기 모음
-site_tagline: Python SSG Directory · Naru Example
-site_description: A Python static site generator directory built with Naru.
+# GitHub Pages 배포 시 자동 설정됩니다. 로컬 빌드에는 --site-origin을 지정하세요.
+site_origin: ""
+site_slogan_en: "Naru: Markdown to Static Sites"
+site_slogan_ko: 한글 문서를 위한 파이썬 정적 사이트 생성기
+site_tagline: Naru · Markdown 정적 사이트 생성기
+site_description: Naru로 Markdown 글과 페이지를 정적 사이트로 만듭니다.
 base_url: ""
+theme:
+  preset: docs
+  accent_color: "#087f78"
+  font_family: '"Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif'
+  content_width: 60rem
 posts_url_prefix: /posts
 category_url_prefix: /category
 tag_url_prefix: /tags
 posts_per_page: 10
 rss_item_limit: 50
 rss_title: Naru Example
-rss_description: Python static site generators and a site built with Naru.
+rss_description: Naru 소개와 Markdown으로 만드는 정적 사이트 예제입니다.
 category_labels:
   BLOG: Blog
   BOOKMARK: Bookmarks

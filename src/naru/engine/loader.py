@@ -1,5 +1,7 @@
-import json
 import re
+import sys
+import unicodedata
+from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from urllib.parse import parse_qs, quote, unquote, urlsplit, urlunsplit
 from xml.etree import ElementTree as etree
@@ -11,16 +13,18 @@ from markdown.inlinepatterns import InlineProcessor
 from markdown.treeprocessors import Treeprocessor
 from markdown.util import AtomicString
 
-from .config import (
-    BASE_URL,
-    CATEGORY_URL_PREFIX,
-    POSTS_URL_PREFIX,
-    SITE_ORIGIN,
-    STATIC_DIR,
-)
+from . import config as engine_config
 from .metadata import content_sort_key, normalize_metadata
+from .routes import content_output_path, content_path
 
 BARE_DOMAIN_PATTERN = r"(?:www\.)?(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,}"
+
+
+def slugify_heading(value: str, separator: str) -> str:
+    normalized = unicodedata.normalize("NFKC", value).casefold()
+    cleaned = re.sub(r"[^\w\s-]", "", normalized)
+    slug = re.sub(r"[\s-]+", separator, cleaned).strip(separator)
+    return slug or "section"
 
 
 def linkify_backticked_domains(content: str) -> str:
@@ -52,7 +56,7 @@ class BareUrlInlineProcessor(InlineProcessor):
 
 class ExternalLinkTreeprocessor(Treeprocessor):
     def run(self, root):
-        site_host = urlsplit(SITE_ORIGIN).hostname
+        site_host = urlsplit(engine_config.SITE_ORIGIN).hostname
         site_host = site_host.lower() if site_host else ""
         if site_host.startswith("www."):
             site_host = site_host[4:]
@@ -72,14 +76,14 @@ class ExternalLinkTreeprocessor(Treeprocessor):
                 link_host = link_host[4:]
             if link_host == site_host:
                 for old_prefix, new_prefix in (
-                    ("/posts", POSTS_URL_PREFIX),
-                    ("/category", CATEGORY_URL_PREFIX),
+                    ("/posts", engine_config.POSTS_URL_PREFIX),
+                    ("/category", engine_config.CATEGORY_URL_PREFIX),
                 ):
                     if parsed_url.path.startswith(old_prefix + "/"):
                         suffix = parsed_url.path[len(old_prefix):].strip("/")
                         route_parts = [
                             part.strip("/")
-                            for part in (BASE_URL, new_prefix, suffix)
+                            for part in (engine_config.BASE_URL, new_prefix, suffix)
                             if part.strip("/")
                         ]
                         link.set(
@@ -96,6 +100,39 @@ class ExternalLinkTreeprocessor(Treeprocessor):
             if "noopener" not in rel_values:
                 rel_values.append("noopener")
             link.set("rel", " ".join(rel_values))
+
+
+class MarkdownLinkTreeprocessor(Treeprocessor):
+    def __init__(self, md, source_file: Path, targets: dict):
+        super().__init__(md)
+        self.source_file = source_file
+        self.targets = targets
+
+    def run(self, root):
+        for link in root.iter("a"):
+            href = link.get("href", "")
+            try:
+                parsed = urlsplit(href)
+            except ValueError:
+                continue
+            if (
+                parsed.scheme
+                or parsed.netloc
+                or not parsed.path
+                or parsed.path.startswith("/")
+                or not parsed.path.lower().endswith(".md")
+            ):
+                continue
+            target = (self.source_file.parent / unquote(parsed.path)).resolve()
+            path = self.targets.get(target)
+            if path is None:
+                print(
+                    f"[WARNING] {self.source_file}: Markdown link target is not a "
+                    f"built document: {href}",
+                    file=sys.stderr,
+                )
+                continue
+            link.set("href", urlunsplit(("", "", path, parsed.query, parsed.fragment)))
 
 
 class YouTubeEmbedTreeprocessor(Treeprocessor):
@@ -192,7 +229,7 @@ class LocalImageTreeprocessor(Treeprocessor):
             relative_source = Path(unquote(parsed.path.replace("\\", "/")))
             source = (self.source_dir / relative_source).resolve()
             try:
-                relative_static_path = source.relative_to(STATIC_DIR.resolve())
+                relative_static_path = source.relative_to(engine_config.STATIC_DIR.resolve())
             except ValueError:
                 relative_static_path = None
 
@@ -202,7 +239,7 @@ class LocalImageTreeprocessor(Treeprocessor):
                     urlunsplit((
                         "",
                         "",
-                        "/" + quote(
+                        engine_config.BASE_URL + "/" + quote(
                             relative_static_path.as_posix(),
                             safe="/:@-._~",
                         ),
@@ -229,7 +266,9 @@ class LocalImageTreeprocessor(Treeprocessor):
                 urlunsplit((
                     "",
                     "",
-                    "/assets/" + quote(asset_path.as_posix(), safe="/:@-._~"),
+                    engine_config.BASE_URL + "/assets/" + quote(
+                        asset_path.as_posix(), safe="/:@-._~"
+                    ),
                     parsed.query,
                     parsed.fragment,
                 )),
@@ -238,10 +277,15 @@ class LocalImageTreeprocessor(Treeprocessor):
 
 
 class BareUrlExtension(Extension):
-    def __init__(self, source_dir: Path | None = None, slug: str = "", **kwargs):
+    def __init__(
+        self, source_dir: Path | None = None, slug: str = "",
+        source_file: Path | None = None, link_targets: dict | None = None, **kwargs,
+    ):
         super().__init__(**kwargs)
         self.source_dir = source_dir
         self.slug = slug
+        self.source_file = source_file
+        self.link_targets = link_targets or {}
         self.local_image_processor = None
 
     def extendMarkdown(self, md):
@@ -269,6 +313,12 @@ class BareUrlExtension(Extension):
                 "local_images",
                 7,
             )
+        if self.source_file is not None:
+            md.treeprocessors.register(
+                MarkdownLinkTreeprocessor(md, self.source_file, self.link_targets),
+                "markdown_links",
+                8,
+            )
         md.treeprocessors.register(
             ExternalLinkTreeprocessor(md),
             "external_links",
@@ -277,18 +327,43 @@ class BareUrlExtension(Extension):
 
 
 def load_markdown_contents(markdown_dir: Path, item_type: str):
+    items = _read_markdown_contents(markdown_dir, item_type)
+    _render_markdown_contents(items)
+    return items
+
+
+def _read_markdown_contents(
+    markdown_dir: Path, item_type: str, *, include_drafts=False, include_future=False,
+    today=None,
+):
     items = []
     if not markdown_dir.exists():
         return items
+    today = today or datetime.now(UTC).date().isoformat()
 
     for md_file in sorted(markdown_dir.rglob("*.md")):
         raw_text = md_file.read_text(encoding="utf-8-sig")
-        if not raw_text.startswith("---"):
+        lines = raw_text.splitlines()
+        if not lines or lines[0] != "---":
             raise ValueError(f"{md_file}: missing YAML front matter")
-        parts = raw_text.split("---", 2)
-        if len(parts) != 3:
-            raise ValueError(f"{md_file}: invalid YAML front matter delimiters")
-        meta = yaml.safe_load(parts[1]) or {}
+
+        try:
+            closing_delimiter = lines.index("---", 1)
+        except ValueError as error:
+            raise ValueError(
+                f"{md_file}: invalid YAML front matter delimiters"
+            ) from error
+
+        try:
+            meta = yaml.safe_load("\n".join(lines[1:closing_delimiter])) or {}
+        except yaml.YAMLError as error:
+            mark = getattr(error, "problem_mark", None)
+            line_number = mark.line + 2 if mark else None
+            location = f"{md_file}:{line_number}" if line_number else str(md_file)
+            problem = getattr(error, "problem", None) or str(error).splitlines()[0]
+            raise ValueError(
+                f"{location}: invalid YAML front matter: {problem}"
+            ) from error
         if not isinstance(meta, dict):
             raise ValueError(f"{md_file}: YAML front matter must be a mapping")
         layout = meta.pop("layout", None)
@@ -296,33 +371,33 @@ def load_markdown_contents(markdown_dir: Path, item_type: str):
             raise ValueError(f"{md_file}: layout must be 'catalog' when specified")
         if layout == "catalog" and item_type != "post":
             raise ValueError(f"{md_file}: catalog layout is only supported for posts")
-        catalog_sites = None
+        if "sites" in meta:
+            raise ValueError(
+                f"{md_file}: move front matter sites to "
+                f"{md_file.with_suffix('.sites.yml').name} and use layout: catalog"
+            )
+        relative_parts = md_file.relative_to(markdown_dir).parts
+        if item_type == "post" and len(relative_parts) > 1:
+            meta.setdefault("category", relative_parts[0])
         if layout == "catalog":
             meta.setdefault("category", "bookmark")
-            catalog_sites = normalize_catalog_sites(
-                meta.pop("sites", []), str(md_file)
-            )
         meta = normalize_metadata(meta, str(md_file))
-        content_md = parts[2].strip()
-
-        image_extension = BareUrlExtension(md_file.parent, meta["slug"])
-        md = markdown.Markdown(
-            extensions=[
-                "fenced_code",
-                "tables",
-                "nl2br",
-                "sane_lists",
-                "toc",
-                image_extension,
-            ]
+        if meta.get("draft", False) and not include_drafts:
+            continue
+        if meta["published_date"] > today and not include_future:
+            continue
+        catalog_sites = (
+            load_catalog_sites(md_file.with_suffix(".sites.yml"))
+            if layout == "catalog"
+            else None
         )
-        content_md = linkify_backticked_domains(content_md)
-        html_body = md.convert(content_md)
+        content_md = "\n".join(lines[closing_delimiter + 1:]).strip()
 
         slug = meta["slug"]
         item = {
             "slug": slug,
             "type": "catalog" if layout == "catalog" else item_type,
+            "source_path": md_file,
             "title": meta["title"],
             "nav_title": meta["nav_title"],
             "description": meta["description"],
@@ -333,13 +408,7 @@ def load_markdown_contents(markdown_dir: Path, item_type: str):
             "badge": f"#{meta.get('category', item_type.upper())}",
             "stat_text": meta.get("category", "문서"),
             "action_text": "문제 해결법 보기 →",
-            "html_content": html_body,
-            "local_image_assets": (
-                image_extension.local_image_processor.assets
-                if image_extension.local_image_processor
-                else []
-            ),
-            "toc_tokens": md.toc_tokens,
+            "_markdown_source": content_md,
             "meta": meta,
         }
         if layout == "catalog":
@@ -349,59 +418,125 @@ def load_markdown_contents(markdown_dir: Path, item_type: str):
                 "stat_text": f"{len(catalog_sites)}개 사이트",
                 "action_text": "목록 확인하기 →",
                 "raw_data": {"page_info": meta, "sites": catalog_sites},
-                "markdown_intro_html": html_body,
             })
         items.append(item)
     return items
 
 
-def normalize_catalog_sites(sites, source_name: str):
+def _render_markdown_contents(items: list[dict]):
+    targets = {item["source_path"].resolve(): content_path(item) for item in items}
+    for item in items:
+        source_file = item["source_path"]
+        extension = BareUrlExtension(
+            source_file.parent, item["slug"], source_file, targets
+        )
+        md = markdown.Markdown(
+            extensions=[
+                "extra",
+                "nl2br",
+                "sane_lists",
+                "toc",
+                "pymdownx.superfences",
+                "pymdownx.tasklist",
+                "pymdownx.tilde",
+                extension,
+            ],
+            extension_configs={"toc": {"slugify": slugify_heading}},
+        )
+        item["html_content"] = md.convert(
+            linkify_backticked_domains(item.pop("_markdown_source"))
+        )
+        item["local_image_assets"] = extension.local_image_processor.assets
+        item["toc_tokens"] = md.toc_tokens
+        if item["type"] == "catalog":
+            item["markdown_intro_html"] = item["html_content"]
+
+
+def load_catalog_sites(path: Path):
+    try:
+        sites = yaml.safe_load(path.read_text(encoding="utf-8-sig"))
+    except FileNotFoundError as error:
+        raise ValueError(f"{path}: catalog sites file is missing") from error
+    except (OSError, UnicodeError, yaml.YAMLError) as error:
+        raise ValueError(f"{path}: cannot read catalog sites: {error}") from error
+
     if not isinstance(sites, list):
-        raise ValueError(f"{source_name}: sites must be a list")
-    for site in sites:
-        if not isinstance(site, dict) or "description" not in site:
-            raise ValueError(f"{source_name}: each site must include a description")
-        site["description"] = str(site["description"]).strip()
+        raise ValueError(f"{path}: catalog sites must be a list")
+    ids = set()
+    for index, site in enumerate(sites, start=1):
+        source = f"{path}: item {index}"
+        if not isinstance(site, dict):
+            raise ValueError(f"{source}: must be a mapping")
+        unknown = set(site) - {"id", "name", "url", "description", "status"}
+        if unknown:
+            raise ValueError(f"{source}: unknown fields: {', '.join(map(str, unknown))}")
+        for field in ("id", "name", "url", "description"):
+            value = site.get(field)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{source}: {field} must be a non-empty string")
+            site[field] = value.strip()
+        site_id = site["id"]
+        if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", site_id):
+            raise ValueError(f"{source}: id must be lowercase kebab-case")
+        if site_id in ids:
+            raise ValueError(f"{source}: duplicate id: {site_id}")
+        ids.add(site_id)
+        try:
+            parsed = urlsplit(site["url"])
+            if (
+                parsed.scheme not in {"http", "https"}
+                or not parsed.hostname
+                or parsed.username is not None
+                or parsed.password is not None
+                or any(char.isspace() or ord(char) < 32 for char in site["url"])
+            ):
+                raise ValueError
+            parsed.port
+        except ValueError as error:
+            raise ValueError(f"{source}: url must be an HTTP(S) URL") from error
+        status = site.get("status", "unknown")
+        if not isinstance(status, str) or status not in {
+            "active", "inactive", "error", "unknown"
+        }:
+            raise ValueError(f"{source}: status must be active, inactive, error, or unknown")
     return sites
 
 
-def load_all_contents(data_dir: Path, posts_dir: Path, pages_dir: Path | None = None):
+def load_all_contents(
+    data_dir: Path, posts_dir: Path, pages_dir: Path | None = None, *,
+    include_drafts=False, include_future=False,
+):
     items = []
+    today = datetime.now(UTC).date().isoformat()
 
-    # 1. JSON catalog content
     if data_dir.exists():
-        for json_file in sorted(data_dir.glob("*.json")):
-            data = json.loads(json_file.read_text(encoding="utf-8"))
-            p_info = data.get("page_info", {})
-            if not isinstance(p_info, dict):
-                raise ValueError(f"{json_file}: page_info must be an object")
-            p_info.setdefault("category", "bookmark")
-            p_info = normalize_metadata(p_info, str(json_file))
-            slug = p_info["slug"]
-            sites = normalize_catalog_sites(data.get("sites", []), str(json_file))
-            data["page_info"] = p_info
-            data["sites"] = sites
-            items.append({
-                "slug": slug,
-                "type": "catalog",
-                "title": p_info["title"],
-                "nav_title": p_info["nav_title"],
-                "description": p_info["description"],
-                "published_date": p_info["published_date"],
-                "updated_date": p_info["updated_date"],
-                "links_checked_date": p_info["links_checked_date"],
-                "tags": p_info["tags"],
-                "footer_link": p_info.get("footer_link") is True,
-                "badge": f"#{slug}",
-                "stat_text": f"{len(data.get('sites', []))}개 사이트",
-                "action_text": "목록 확인하기 →",
-                "raw_data": data,
-                "meta": p_info,
-            })
+        legacy_catalogs = sorted(data_dir.glob("*.json"))
+        if legacy_catalogs:
+            raise ValueError(
+                f"{legacy_catalogs[0]}: JSON catalogs are no longer supported; "
+                "move the page to Markdown and its sites to a matching .sites.yml file"
+            )
 
-    items.extend(load_markdown_contents(posts_dir, "post"))
+    items.extend(_read_markdown_contents(
+        posts_dir, "post", include_drafts=include_drafts, include_future=include_future,
+        today=today,
+    ))
     if pages_dir is not None:
-        items.extend(load_markdown_contents(pages_dir, "page"))
+        items.extend(_read_markdown_contents(
+            pages_dir, "page", include_drafts=include_drafts, include_future=include_future,
+            today=today,
+        ))
 
+    output_sources = {}
+    for item in items:
+        output_path = content_output_path(item)
+        if output_path in output_sources:
+            raise ValueError(
+                f"{item['source_path']}: output path {output_path} conflicts with "
+                f"{output_sources[output_path]}"
+            )
+        output_sources[output_path] = item["source_path"]
+
+    _render_markdown_contents(items)
     items.sort(key=content_sort_key, reverse=True)
     return items

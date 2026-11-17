@@ -1,0 +1,9 @@
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="{{ ADSENSE_PUB_ID }}"
+     data-ad-slot="{{ slot_id }}"
+     {% if infeed and layout_key %}data-ad-layout-key="{{ layout_key }}"{% else %}data-ad-format="{{ ad_format }}"{% endif %}
+     {% if not infeed %}data-full-width-responsive="{{ 'true' if full_width_responsive else 'false' }}"{% endif %}></ins>
+<script>
+     (adsbygoogle = window.adsbygoogle || []).push({});
+</script>

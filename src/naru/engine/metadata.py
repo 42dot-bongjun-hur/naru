@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from datetime import date
 
 
@@ -21,6 +22,8 @@ def normalize_date(value, field_name: str, source_name: str) -> str:
 
 def normalize_metadata(raw: dict, source_name: str) -> dict:
     metadata = dict(raw)
+    if "draft" in metadata and type(metadata["draft"]) is not bool:
+        raise ValueError(f"{source_name}: draft must be true or false")
     legacy_fields = {"desc", "date", "keywords", "last_checked", "updated_note"}
     found_legacy_fields = legacy_fields.intersection(metadata)
     if found_legacy_fields:
@@ -30,8 +33,11 @@ def normalize_metadata(raw: dict, source_name: str) -> dict:
     for field_name in ("title", "nav_title", "slug"):
         if not isinstance(metadata.get(field_name), str) or not metadata[field_name].strip():
             raise ValueError(f"{source_name}: {field_name} is required")
-    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", metadata["slug"]):
-        raise ValueError(f"{source_name}: slug must be lowercase kebab-case")
+    metadata["slug"] = unicodedata.normalize("NFC", metadata["slug"])
+    if not re.fullmatch(r"[a-z0-9가-힣]+(?:-[a-z0-9가-힣]+)*", metadata["slug"]):
+        raise ValueError(
+            f"{source_name}: slug must use lowercase letters, Korean, numbers, and hyphens"
+        )
 
     description = metadata.get("description")
     if not isinstance(description, str) or not description.strip():
@@ -53,13 +59,15 @@ def normalize_metadata(raw: dict, source_name: str) -> dict:
     tags = metadata.get("tags")
     if not isinstance(tags, list) or any(not isinstance(tag, str) for tag in tags):
         raise ValueError(f"{source_name}: tags must be a list of strings")
-    metadata["tags"] = [tag.strip() for tag in tags if tag.strip()]
+    metadata["tags"] = [
+        unicodedata.normalize("NFC", tag.strip()) for tag in tags if tag.strip()
+    ]
 
     if "category" in metadata:
         category = metadata["category"]
         if not isinstance(category, str) or not category.strip():
             raise ValueError(f"{source_name}: category must be a non-empty string")
-        metadata["category"] = category.strip()
+        metadata["category"] = unicodedata.normalize("NFC", category.strip())
 
     links_checked_date = metadata.get("links_checked_date", "")
     metadata["links_checked_date"] = (

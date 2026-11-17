@@ -1,0 +1,48 @@
+<div class="home-article-sections" aria-label="주제별 글 목록">
+  {% for group in home_groups %}
+  <section class="home-category-group" aria-labelledby="home-group-{{ group.icon_name }}">
+    <div class="home-group-heading">
+      <span class="home-group-icon">{{ group.icon }}</span>
+      <div class="home-group-title">
+        <span class="home-group-kicker">{{ group.kicker }}</span>
+        <h2 id="home-group-{{ group.icon_name }}">{{ group.label }}</h2>
+      </div>
+      <span class="home-group-count">{{ '%02d' | format(group.count) }} ITEMS</span>
+    </div>
+    {% if group.utility_url %}
+    <a class="home-utility-launch" href="{{ group.utility_url }}">
+      <span class="home-utility-mark">{{ group.icon }}</span>
+      <span class="home-utility-copy">
+        <strong>브라우저 도구 바로 열기</strong>
+        <small>정규식, 변환, 네트워크 계산과 패킷 명령어를 한곳에서 확인합니다.</small>
+      </span>
+      <span class="home-utility-action">도구 열기 <span aria-hidden="true">→</span></span>
+    </a>
+    {% endif %}
+    <div class="home-group-categories">
+      {% for category in group.categories %}
+      <section class="home-article-category" aria-label="{{ category.label }} 콘텐츠">
+        <div class="home-category-heading">
+          <h2>{{ category.label }}</h2><span>{{ '%02d' | format(category.count) }} ITEMS</span>
+        </div>
+        <div class="home-article-grid">
+          {% for item in category["items"] %}
+          <a class="home-article-card" href="{{ content_url(item) }}">
+            <span class="home-article-date">{{ item.updated_date[5:] }}</span>
+            <strong>{{ item.title }}</strong>
+            <span class="home-article-description">{{ item.description }}</span>
+          </a>
+          {% if category.show_ad and loop.index == 4 and not loop.last %}
+          <div class="home-infeed-ad" aria-label="광고"><span>광고</span>{{ infeed_ad }}</div>
+          {% endif %}
+          {% endfor %}
+        </div>
+        {% if category.more_url %}
+        <a class="home-category-more" href="{{ category.more_url }}">더 보기 <span>({{ category.count }}개 항목)</span> →</a>
+        {% endif %}
+      </section>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+</div>

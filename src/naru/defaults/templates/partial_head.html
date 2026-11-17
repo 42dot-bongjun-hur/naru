@@ -5,4 +5,7 @@
 <meta name="robots" content="{{ ROBOTS }}">
 <link rel="canonical" href="{{ SITE_ORIGIN }}{{ CANONICAL_PATH }}">
 <link rel="stylesheet" href="{{ BASE_URL }}/assets/naru.css?v={{ CSS_VERSION }}">
+{% for stylesheet in THEME_STYLESHEETS %}
+<link rel="stylesheet" href="{{ stylesheet }}">
+{% endfor %}
 {{ GOOGLE_TAG }}

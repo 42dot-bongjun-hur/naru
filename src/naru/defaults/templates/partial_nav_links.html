@@ -1,0 +1,3 @@
+{% for link in links %}
+{% if list_items %}<li>{% endif %}<a{% if link.get('class_name') %} class="{{ link.class_name }}"{% endif %} href="{{ link.href }}">{% if link.get('icon') %}{{ link.icon }}<span>{{ link.label }}</span>{% else %}{{ link.label }}{% endif %}{% if link.get('date') %} <span class="sidebar-date">{{ link.date }}</span>{% endif %}{% if 'count' in link %} <span class="sidebar-count">{{ link.count }}</span>{% endif %}</a>{% if list_items %}</li>{% endif %}
+{% endfor %}

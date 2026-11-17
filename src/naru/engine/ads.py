@@ -1,4 +1,4 @@
-from .config import ADSENSE_PUB_ID
+from .templates import render_template
 
 
 def render_ad(
@@ -9,27 +9,16 @@ def render_ad(
     """구글 애드센스 표준 반응형 광고 단위 생성"""
     if not slot_id:
         return ""
-    full_width_value = "true" if full_width_responsive else "false"
-    return f"""<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="{ADSENSE_PUB_ID}"
-     data-ad-slot="{slot_id}"
-     data-ad-format="{ad_format}"
-     data-full-width-responsive="{full_width_value}"></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({{}});
-</script>"""
+    return render_template(
+        "partial_ad.html", slot_id=slot_id, ad_format=ad_format,
+        full_width_responsive=full_width_responsive, infeed=False, layout_key="",
+    )
 
 def render_infeed_ad(slot_id: str, layout_key: str = "") -> str:
     """카드 그리드 내 인피드 광고 전용 렌더러"""
     if not slot_id:
         return ""
-    layout_attr = f'data-ad-layout-key="{layout_key}"' if layout_key else 'data-ad-format="fluid"'
-    return f"""<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="{ADSENSE_PUB_ID}"
-     data-ad-slot="{slot_id}"
-     {layout_attr}></ins>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({{}});
-</script>"""
+    return render_template(
+        "partial_ad.html", slot_id=slot_id, ad_format="fluid",
+        infeed=True, layout_key=layout_key,
+    )

@@ -1,0 +1,8 @@
+{% for entry in archive_entries %}
+  <a class="home-article-card" href="{{ entry.url }}">
+    {% if entry.category_label %}<span class="home-article-category-label">{{ entry.category_label }}</span>{% endif %}
+    <span class="home-article-date">{{ entry.item.published_date }}</span>
+    <strong>{{ entry.item.title }}</strong>
+    <span class="home-article-description">{{ entry.item.description }}</span>
+  </a>
+{% endfor %}

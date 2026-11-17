@@ -1,10 +1,14 @@
 """Load and validate site-specific settings."""
 
 import re
+import unicodedata
+from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
 
 import yaml
+
+from naru.theme import normalize_theme
 
 STRING_FIELDS = {
     "site_name",
@@ -50,14 +54,23 @@ MAPPING_FIELDS = {"category_labels", "category_redirects", "author_notes"}
 LIST_FIELDS = {"home_category_order", "home_category_groups"}
 FIELDS = (
     STRING_FIELDS | POSITIVE_FIELDS | NONNEGATIVE_FIELDS | MAPPING_FIELDS | LIST_FIELDS
-)
+) | {"theme"}
 
 
 class ConfigError(ValueError):
     """A site configuration is missing or invalid."""
 
 
-def load_config(path: Path) -> dict:
+@dataclass(frozen=True)
+class BuildConfig:
+    site_root: Path
+    output_dir: Path
+    settings: dict
+    include_drafts: bool = False
+    include_future: bool = False
+
+
+def load_config(path: Path, *, overrides: dict | None = None) -> dict:
     try:
         with path.open(encoding="utf-8-sig") as source:
             data = yaml.safe_load(source)
@@ -67,6 +80,8 @@ def load_config(path: Path) -> dict:
         raise ConfigError(
             f"{path}: site configuration must be a mapping with string keys"
         )
+    if overrides:
+        data = {**data, **overrides}
     missing, unknown = {"site_name", "site_origin"} - data.keys(), data.keys() - FIELDS
     if missing or unknown:
         details = []
@@ -108,6 +123,10 @@ def load_config(path: Path) -> dict:
         "author_note_default": "",
     }
     data = {**defaults, **data}
+    try:
+        data["theme"] = normalize_theme(data.get("theme", {}), path.parent)
+    except ValueError as error:
+        raise ConfigError(f"{path}: {error}") from error
     for field in STRING_FIELDS:
         if not isinstance(data[field], str) or (
             field in NONEMPTY_FIELDS and not data[field].strip()
@@ -124,13 +143,22 @@ def load_config(path: Path) -> dict:
             not isinstance(k, str) or not isinstance(v, str) for k, v in value.items()
         ):
             raise ConfigError(f"{path}: {field} must map strings to strings")
+    redirects = {}
     for old, new in data["category_redirects"].items():
+        old = unicodedata.normalize("NFC", old)
+        new = unicodedata.normalize("NFC", new)
         if not all(
-            re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", slug) for slug in (old, new)
+            re.fullmatch(r"[a-z0-9가-힣]+(?:-[a-z0-9가-힣]+)*", slug)
+            for slug in (old, new)
         ):
             raise ConfigError(
-                f"{path}: category_redirects must use lowercase kebab-case slugs"
+                f"{path}: category_redirects must use lowercase or Korean "
+                "kebab-case slugs"
             )
+        if old in redirects:
+            raise ConfigError(f"{path}: duplicate normalized category redirect: {old}")
+        redirects[old] = new
+    data["category_redirects"] = redirects
     order = data["home_category_order"]
     if not isinstance(order, list) or any(not isinstance(item, str) for item in order):
         raise ConfigError(f"{path}: home_category_order must be a list of strings")

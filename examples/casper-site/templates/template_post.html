@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko">
+<head>{{ HEAD_HTML }}{{ JSON_LD }}</head>
+<body class="journal-post">
+  {{ NAV_HTML }}
+  <main>
+    <article>
+      <header class="journal-post-header">
+        <h1>{{ TITLE }}</h1>
+        <p>{{ DESCRIPTION }}</p>
+        {{ POST_META }}
+      </header>
+      {% if page.meta.get('feature_image') %}
+      <figure class="journal-post-image">
+        <img src="{{ BASE_URL }}/{{ page.meta.feature_image }}" alt="{{ page.meta.get('feature_image_alt', '') }}" width="1440" height="960" fetchpriority="high">
+      </figure>
+      {% endif %}
+      <div class="journal-prose">{{ CONTENT_HTML }}</div>
+      {{ BYLINE }}
+    </article>
+  </main>
+  {{ FOOTER_HTML }}
+</body>
+</html>

@@ -1,0 +1,13 @@
+<aside class="related-posts-box" aria-label="관련 글">
+  <h2 class="related-posts-title">{{ heading }}</h2>
+  <div class="related-post-list">
+    {% for entry in related_entries %}
+    <a class="related-post-item" href="{{ content_url(entry.item) }}">
+      <span class="related-post-cat">[{{ entry.category_label }}]</span>
+      <span class="related-post-title">{{ entry.item.title }}</span>
+      <span class="related-post-date">{{ entry.item.updated_date }}</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% if hub %}<a class="related-post-more" href="{{ content_url(hub) }}">{{ hub.nav_title }} 전체 보기 →</a>{% endif %}
+</aside>
