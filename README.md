@@ -16,10 +16,8 @@ Naru는 한글 콘텐츠 작성에 익숙한 사용자를 위한 간단한 Pytho
 [GitHub 저장소](https://github.com/bjnhur/naru) ·
 [PyPI 패키지](https://pypi.org/project/naru-sitegen/)
 
-> 0.x 시험판: 기본 템플릿과 최소 설정을 제공하며, 정해진 페이지 구조를
-> 사용합니다.
-> 이 문서는 개발 중인 저장소 기준이며, 테마 설정, Jinja2 템플릿, 새 Markdown 문법,
-> 카탈로그 형식과 CLI 옵션은 다음 배포 전까지 PyPI 0.2.0에 포함되지 않습니다.
+> 0.x 시험판: 기능과 설정은 계속 발전할 수 있으므로, 사이트 빌드 전에
+> 설치한 버전의 문서와 예제를 확인하세요.
 
 ## 기능
 
@@ -75,7 +73,7 @@ Python 3.11 이상이 필요합니다.
 사용하므로 설치하기 전에 `python -m pip uninstall naru`로 제거하세요.
 
 ```powershell
-python -m pip install "naru-sitegen==0.2.0"
+python -m pip install "naru-sitegen==0.2.1"
 ```
 
 > [!IMPORTANT]
@@ -99,7 +97,7 @@ python -m pip install "naru-sitegen==0.2.0"
 버전을 올릴 때는 `pyproject.toml`과 `src/naru/__init__.py`의 버전 및 CLI
 테스트를 함께 갱신하고 테스트를 통과시킵니다. 변경을 기본 브랜치에 반영한
 후 같은 커밋에 `v` 접두사가 붙은 버전 태그를 만들고 push합니다. 예를 들어
-`0.2.0`의 태그는 `v0.2.0`입니다. 태그 push 시 워크플로가 태그와 버전 일치,
+`0.2.1`의 태그는 `v0.2.1`입니다. 태그 push 시 워크플로가 태그와 버전 일치,
 테스트 및 배포 파일을 확인한 후 PyPI에
 게시합니다. 한 번 업로드한 배포 파일은 동일한 이름으로 다시 업로드할 수
 없으므로, 게시 후 변경에는 새 버전이 필요합니다.
@@ -139,7 +137,7 @@ Naru가 생성한 `.naru-output` 표식이 있어야 합니다. 기존 폴더를
 
 ## 최소 사이트
 
-0.2.0에서는 사이트 폴더의 `naru.yml`에 이름과 공개 주소만 지정해도
+0.2.1에서는 사이트 폴더의 `naru.yml`에 이름과 공개 주소만 지정해도
 기본 템플릿으로 빌드할 수 있습니다.
 
 ```yaml
@@ -268,6 +266,8 @@ python -m naru serve --site-root examples/casper-site --site-origin https://exam
 ```
 
 `static/tools/`를 제공한다면 `index.html`도 필요합니다.
+`static/robots.txt`를 제공하면 Naru가 만드는 기본 파일 대신 해당 파일을 그대로
+사용합니다.
 
 지원하는 Markdown 문법과 작성 예제는 [Markdown 가이드](docs/markdown.md)를 참고하세요.
 템플릿 변수와 작성 방법은 [템플릿 가이드](docs/templates.md)를 참고하세요.

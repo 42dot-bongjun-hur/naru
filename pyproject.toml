@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "naru-sitegen"
-version = "0.2.0"
+version = "0.2.1"
 description = "A simple, Korean-friendly Python static site generator for Markdown sites"
 readme = "README.md"
 requires-python = ">=3.11"

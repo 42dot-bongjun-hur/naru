@@ -710,7 +710,7 @@ def build_post_archives(content_items, tpl_archive, tpl_head, tpl_nav, footer_ht
         build_archive_page(
             tpl_archive, tpl_head, tpl_nav, footer_html, docs_assets,
             site_domain, top_nav_links,
-            "콘텐츠 목록" if page_number == 1 else f"콘텐츠 목록 {page_number}페이지",
+            "글 목록" if page_number == 1 else f"글 목록 {page_number}페이지",
             engine_config.SITE_DESCRIPTION,
             route,
             page_items,

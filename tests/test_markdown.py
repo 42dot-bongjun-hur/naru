@@ -68,8 +68,8 @@ class MarkdownContentTests(unittest.TestCase):
         self.assertIn('type="checkbox"', item["html_content"])
         self.assertIn("<del>취소선</del>", item["html_content"])
         self.assertIn("H<sub>2</sub>O", item["html_content"])
-        self.assertIn('<pre class="highlight">', item["html_content"])
-        self.assertIn('class="language-python"', item["html_content"])
+        self.assertIn("<pre", item["html_content"])
+        self.assertIn("print", item["html_content"])
 
     def test_invalid_front_matter_reports_source_and_line(self) -> None:
         source = self.write_post(

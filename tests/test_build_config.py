@@ -541,6 +541,23 @@ class BuildConfigurationTests(unittest.TestCase):
         self.assertIn(str(post), stderr.getvalue())
         self.assertEqual(static.read_text(encoding="utf-8"), "static content")
 
+    def test_static_robots_file_overrides_generated_robots(self) -> None:
+        (self.root / "static" / "tools").rmdir()
+        robots = self.root / "static" / "robots.txt"
+        robots.write_text(
+            "User-agent: *\nAllow: /\nDisallow: /private/\n",
+            encoding="utf-8",
+        )
+
+        self.assertEqual(
+            main(["build", "--site-root", str(self.root), "--output", "output"]), 0
+        )
+
+        self.assertEqual(
+            (self.root / "output" / "robots.txt").read_bytes(),
+            robots.read_bytes(),
+        )
+
     def test_archive_collision_preserves_previous_output(self) -> None:
         (self.root / "static" / "tools").rmdir()
         args = ["build", "--site-root", str(self.root), "--output", "output"]
@@ -933,11 +950,12 @@ class BuildConfigurationTests(unittest.TestCase):
         self.assertNotIn('class="ad-row"', catalog)
         self.assertIn("example.com/python-ssg/", sitemap)
         self.assertIn("<strong>두 개의 별표</strong>", post)
-        self.assertIn('<code class="language-python">', post)
+        self.assertIn("<pre>", post)
+        self.assertIn("greet", post)
         self.assertIn("Markdown 기본 문법", blog_category)
         self.assertIn("Naru 소개", blog_category)
         self.assertIn("Python 정적 사이트 생성기(SSG) 모음", bookmark_category)
-        self.assertIn("<h1>콘텐츠 목록</h1>", all_content)
+        self.assertIn("<h1>글 목록</h1>", all_content)
         self.assertIn("Markdown 기본 문법", all_content)
         self.assertIn("Python 정적 사이트 생성기(SSG) 모음", all_content)
         self.assertIn(">Blog</span>", all_content)

@@ -81,7 +81,9 @@ def generate_rss(contents: list):
     print(f"[OK] rss.xml & feed.xml 생성 완료 ({len(ordered_contents)}개 항목)")
 
 def generate_robots():
-    """robots.txt 생성"""
+    """정적 robots.txt가 없으면 생성"""
+    if (engine_config.STATIC_DIR / "robots.txt").is_file():
+        return
     content = f"""User-agent: *
 Allow: /
 Sitemap: {engine_config.SITE_ORIGIN}{site_root_path()}sitemap.xml

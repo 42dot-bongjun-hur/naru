@@ -15,7 +15,7 @@ python -m naru serve --site-root examples/casper-site --site-origin https://exam
 
 기본 미리보기 주소는 `http://127.0.0.1:8000/`입니다. 배포용 빌드는
 `serve` 대신 `build --output _site`를 사용하고 `site_origin`에는 실제
-게시할 도메인을 지정하세요. PyPI 0.2.0에는 테마 설정이 포함되지 않습니다.
+게시할 도메인을 지정하세요. 테마 설정은 Naru 0.2.1부터 사용할 수 있습니다.
 
 ## 구성
 
