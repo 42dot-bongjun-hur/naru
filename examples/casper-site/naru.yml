@@ -1,0 +1,26 @@
+site_name: Naru Journal
+site_origin: ""
+site_tagline: Notes on making, writing, and the everyday.
+site_description: 만들고, 쓰고, 기록하는 사람들을 위한 작은 저널.
+site_slogan_en: Naru Journal
+site_slogan_ko: 만들고, 쓰고, 기록하는 일상의 발견.
+author_name: Naru
+author_bio: 좋은 기록이 다음 아이디어의 시작이 되기를 바랍니다.
+theme:
+  preset: default
+  accent_color: "#15171a"
+  accent_hover: "#087f78"
+  background: "#ffffff"
+  surface: "#ffffff"
+  text_color: "#15171a"
+  muted_color: "#626970"
+  border_color: "#e5e7eb"
+  content_width: 76rem
+  font_family: '"Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif'
+  custom_css:
+    - styles/casper.css
+home_recent_posts: 12
+category_labels:
+  journal: Journal
+  craft: Craft
+  notes: Notes

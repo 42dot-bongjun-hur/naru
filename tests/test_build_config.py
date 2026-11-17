@@ -84,6 +84,73 @@ class BuildConfigurationTests(unittest.TestCase):
                 self.config, overrides={"site_origin": "https://example.com/path"}
             )
 
+    def test_theme_defaults_and_token_overrides(self) -> None:
+        self.config.write_text(
+            "site_name: Test\nsite_origin: https://example.com\n", encoding="utf-8"
+        )
+        self.assertEqual(load_config(self.config)["theme"]["preset"], "default")
+        theme = load_config(self.config, overrides={"theme": {
+            "preset": "docs", "accent_color": "#123456", "content_width": "60rem",
+        }})["theme"]
+        self.assertEqual(theme["accent_color"], "#123456")
+        self.assertEqual(theme["accent_hover"], "#065f59")
+        self.assertEqual(theme["content_width"], "60rem")
+
+    def test_invalid_theme_settings_are_rejected(self) -> None:
+        for theme in (
+            None, [], {"preset": []}, {"preset": "missing"}, {"typo": "red"},
+            {"accent_color": "red; } body { display: none"},
+            {"font_family": "sans-serif; color: red"},
+            {"content_width": "100%"}, {"custom_css": "extra.css"},
+            {"custom_css": ["../outside.css"]}, {"custom_css": ["missing.css"]},
+            {"custom_css": ["https://example.com/style.css"]},
+        ):
+            with (
+                self.subTest(theme=theme),
+                self.assertRaisesRegex(ConfigError, "theme"),
+            ):
+                load_config(self.config, overrides={"theme": theme})
+
+    def test_theme_stylesheets_are_ordered_versioned_and_rebuilt(self) -> None:
+        (self.root / "static" / "tools").rmdir()
+        styles = self.root / "static" / "styles"
+        styles.mkdir()
+        custom = styles / "site style.css"
+        custom.write_text("a { text-decoration: none; }", encoding="utf-8")
+        self.config.write_text(
+            "site_name: Test\nsite_origin: https://example.com\nbase_url: /notes\n"
+            "theme:\n  preset: docs\n  accent_color: '#123456'\n"
+            "  custom_css:\n    - styles/site style.css\n",
+            encoding="utf-8",
+        )
+        args = ["build", "--site-root", str(self.root), "--output", "output"]
+        self.assertEqual(main(args), 0)
+        output = self.root / "output"
+        home = (output / "index.html").read_text(encoding="utf-8")
+        themed = (output / "assets" / "naru-theme.css").read_text(encoding="utf-8")
+        self.assertIn("--naru-accent-color: #123456;", themed)
+        self.assertIn("--naru-content-width: 64rem;", themed)
+        urls = ["/notes/assets/naru.css?v=", "/notes/assets/naru-theme.css?v=",
+                "/notes/styles/site%20style.css?v="]
+        self.assertLess(home.index(urls[0]), home.index(urls[1]))
+        self.assertLess(home.index(urls[1]), home.index(urls[2]))
+        old_version = hashlib.sha256(custom.read_bytes()).hexdigest()[:12]
+        self.assertIn(f"{urls[2]}{old_version}", home)
+        custom.write_text("a { text-decoration: underline; }", encoding="utf-8")
+        self.assertEqual(main(args), 0)
+        rebuilt = (output / "index.html").read_text(encoding="utf-8")
+        self.assertNotIn(f"{urls[2]}{old_version}", rebuilt)
+        self.assertEqual(
+            (output / "styles" / custom.name).read_bytes(), custom.read_bytes()
+        )
+        self.config.write_text(
+            "site_name: Test\nsite_origin: https://example.com\n", encoding="utf-8"
+        )
+        self.assertEqual(main(args), 0)
+        reset = (output / "assets" / "naru-theme.css").read_text(encoding="utf-8")
+        self.assertIn("--naru-accent-color: #2459a6;", reset)
+        self.assertNotIn("site%20style.css", (output / "index.html").read_text("utf-8"))
+
     def test_check_validates_without_changing_site_output(self) -> None:
         (self.root / "static" / "tools").rmdir()
         output = self.root / "docs"
@@ -93,6 +160,27 @@ class BuildConfigurationTests(unittest.TestCase):
         self.assertEqual(main(["check", "--site-root", str(self.root)]), 0)
         self.assertEqual(sentinel.read_text(encoding="utf-8"), "keep")
         self.assertFalse((output / ".naru-output").exists())
+
+    def test_casper_example_builds_with_project_paths(self) -> None:
+        site = EXAMPLE_CONFIG.parents[1] / "casper-site"
+        output = self.root / "casper-output"
+        self.assertEqual(main([
+            "build", "--site-root", str(site), "--output", str(output),
+            "--site-origin", "https://example.com", "--base-url", "/journal",
+        ]), 0)
+        home = (output / "index.html").read_text(encoding="utf-8")
+        self.assertIn("journal-featured", home)
+        self.assertEqual(home.count('class="journal-story-body"'), 3)
+        self.assertIn("/journal/images/notebook.jpg", home)
+        self.assertIn("/journal/styles/casper.css?v=", home)
+        self.assertIn("/journal/posts/a-place-to-begin/", home)
+        post = (output / "posts" / "a-place-to-begin" / "index.html").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn('class="journal-prose"', post)
+        self.assertIn("/journal/images/notebook.jpg", post)
+        for name in ("notebook.jpg", "writing.jpg", "workspace.jpg"):
+            self.assertTrue((output / "images" / name).is_file())
 
     def test_korean_addresses_and_publication_policy(self) -> None:
         self.config.write_text(

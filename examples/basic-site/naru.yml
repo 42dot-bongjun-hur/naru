@@ -6,6 +6,11 @@ site_slogan_ko: 한글 문서를 위한 파이썬 정적 사이트 생성기
 site_tagline: Naru · Markdown 정적 사이트 생성기
 site_description: Naru로 Markdown 글과 페이지를 정적 사이트로 만듭니다.
 base_url: ""
+theme:
+  preset: docs
+  accent_color: "#087f78"
+  font_family: '"Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif'
+  content_width: 60rem
 posts_url_prefix: /posts
 category_url_prefix: /category
 tag_url_prefix: /tags

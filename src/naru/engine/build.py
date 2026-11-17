@@ -26,6 +26,7 @@ from jinja2 import (
 from markupsafe import Markup
 
 from naru.config import BuildConfig
+from naru.theme import theme_css
 
 from . import config as engine_config
 from .ads import render_ad, render_infeed_ad
@@ -1201,6 +1202,17 @@ def _build(config: BuildConfig):
     stylesheet = docs_assets / "naru.css"
     if stylesheet.is_file():
         CSS_VERSION.set(hashlib.sha256(stylesheet.read_bytes()).hexdigest()[:12])
+    theme_stylesheet = docs_assets / "naru-theme.css"
+    claim_output(theme_stylesheet, "theme stylesheet")
+    theme_stylesheet.write_text(theme_css(config.settings["theme"]), encoding="utf-8")
+    theme_stylesheets = []
+    for relative in ["assets/naru-theme.css", *config.settings["theme"]["custom_css"]]:
+        stylesheet = engine_config.OUT_DIR / relative
+        version = hashlib.sha256(stylesheet.read_bytes()).hexdigest()[:12]
+        theme_stylesheets.append(
+            f"{engine_config.BASE_URL}/{quote(relative, safe='/')}?v={version}"
+        )
+    templates.globals["THEME_STYLESHEETS"] = theme_stylesheets
     site_domain = generate_github_pages_meta()
 
     sync_post_images(items, docs_assets)

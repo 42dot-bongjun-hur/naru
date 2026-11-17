@@ -58,11 +58,17 @@ Naru는 Jinja2로 HTML 템플릿을 렌더링합니다. 사이트의 `templates/
 공통 부분 템플릿에서는 사이트 설정 외에 다음 변수를 사용할 수 있습니다.
 
 - `partial_head.html`: `TITLE`, `DESCRIPTION`, `KEYWORDS`, `CANONICAL_PATH`,
-  `OG_IMAGE`, `OG_TYPE`, `ROBOTS`, `CSS_VERSION`, `GOOGLE_TAG`.
+  `OG_IMAGE`, `OG_TYPE`, `ROBOTS`, `CSS_VERSION`, `THEME_STYLESHEETS`, `GOOGLE_TAG`.
 - `partial_googletag.html`: `partial_head.html`과 같은 페이지 정보 및 사이트 설정.
 - `partial_nav.html`: `TOP_NAV_LINKS`, `NAV_RIGHT`.
 - `partial_footer.html`: `SITE_DOMAIN`, `FOOTER_GROUP_LINKS`, `FOOTER_INFO_LINKS`, `pages`.
 - `partial_catalog_entries.html`: `sites`, `page`, `AD_IN_TABLE`과 카탈로그 변수.
+
+`THEME_STYLESHEETS`는 테마 토큰 CSS와 설정된 사용자 CSS의 URL 목록입니다.
+기본 head는 기본 CSS 다음에 이 목록을 순서대로 불러옵니다. head를 직접
+작성했다면 같은 반복문을 추가하세요. [테마 가이드](themes.md)에 적용 예제와
+기존 CSS와의 우선순위를 설명합니다. 검증된 테마 설정은 `site.theme`으로
+접근할 수 있습니다.
 
 ## 안전과 호환성
 

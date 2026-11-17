@@ -8,6 +8,8 @@ from urllib.parse import urlsplit
 
 import yaml
 
+from naru.theme import normalize_theme
+
 STRING_FIELDS = {
     "site_name",
     "site_origin",
@@ -52,7 +54,7 @@ MAPPING_FIELDS = {"category_labels", "category_redirects", "author_notes"}
 LIST_FIELDS = {"home_category_order", "home_category_groups"}
 FIELDS = (
     STRING_FIELDS | POSITIVE_FIELDS | NONNEGATIVE_FIELDS | MAPPING_FIELDS | LIST_FIELDS
-)
+) | {"theme"}
 
 
 class ConfigError(ValueError):
@@ -121,6 +123,10 @@ def load_config(path: Path, *, overrides: dict | None = None) -> dict:
         "author_note_default": "",
     }
     data = {**defaults, **data}
+    try:
+        data["theme"] = normalize_theme(data.get("theme", {}), path.parent)
+    except ValueError as error:
+        raise ConfigError(f"{path}: {error}") from error
     for field in STRING_FIELDS:
         if not isinstance(data[field], str) or (
             field in NONEMPTY_FIELDS and not data[field].strip()

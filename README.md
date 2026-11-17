@@ -18,13 +18,14 @@ Naru는 한글 콘텐츠 작성에 익숙한 사용자를 위한 간단한 Pytho
 
 > 0.x 시험판: 기본 템플릿과 최소 설정을 제공하며, 정해진 페이지 구조를
 > 사용합니다.
-> 이 문서는 개발 중인 저장소 기준이며, Jinja2 템플릿, 새 Markdown 문법,
+> 이 문서는 개발 중인 저장소 기준이며, 테마 설정, Jinja2 템플릿, 새 Markdown 문법,
 > 카탈로그 형식과 CLI 옵션은 다음 배포 전까지 PyPI 0.2.0에 포함되지 않습니다.
 
 ## 기능
 
 - `naru.yml`을 이용한 사이트 설정과 출력 경로 분리
 - 패키지에 포함된 기본 템플릿과 스타일, 사이트별 템플릿 덮어쓰기
+- 기본형·문서형 테마 프리셋, 색상·글꼴·본문 폭 설정과 사용자 CSS 확장
 - Jinja2 템플릿의 조건, 반복, 포함과 상속 지원
 - Markdown 블로그 글과 페이지 생성
 - 초안과 미래 날짜 게시물의 기본 비공개 및 미리보기 옵션
@@ -241,9 +242,31 @@ templates/
   partial_catalog_entries.html
 ```
 
-기본 헤더는 패키지의 `naru.css`를 사용합니다. 스타일을 변경하려면 사이트의
-`assets/naru.css` 또는 `static/assets/naru.css`를 제공하거나
-`partial_head.html`을 직접 작성하세요.
+기본 헤더는 패키지의 `naru.css`를 사용합니다. 템플릿을 수정하지 않고
+`naru.yml`에 테마를 설정할 수 있습니다.
+
+```yaml
+theme:
+  preset: docs
+  accent_color: "#087f78"
+  content_width: 60rem
+```
+
+설정을 생략하면 기존 `default` 테마를 유지합니다. 색상·본문/코드 글꼴·본문 폭을
+지정하거나 `theme.custom_css`로 `static/` 안의 CSS를 순서대로 추가할 수 있습니다.
+설정과 적용 순서, 기존 프로젝트 이전 방법은 [테마 가이드](docs/themes.md)를
+참고하세요. 기존 `assets/naru.css`, `static/assets/naru.css` 전체 교체와
+`partial_head.html` 사용자화도 계속 지원합니다.
+
+[Casper 스타일 저널 예제](examples/casper-site/README.md)는 Ghost의 Casper를
+시각적으로 참고해 Naru용으로 새로 작성했습니다. 큰 제목과 이미지 중심 글 목록,
+읽기 본문을 사이트별 템플릿과 사용자 CSS만으로 구성합니다. 기존 문서형 예제는
+그대로 유지됩니다.
+
+```powershell
+python -m naru serve --site-root examples/casper-site --site-origin https://example.com
+```
+
 `static/tools/`를 제공한다면 `index.html`도 필요합니다.
 
 지원하는 Markdown 문법과 작성 예제는 [Markdown 가이드](docs/markdown.md)를 참고하세요.

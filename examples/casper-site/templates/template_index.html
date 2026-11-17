@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>{{ HEAD_HTML }}</head>
+<body class="journal-home">
+  {{ NAV_HTML }}
+  <main>
+    <header class="journal-masthead">
+      <h1>{{ SITE_NAME }}</h1>
+      <p>{{ SLOGAN_KO }}</p>
+    </header>
+    {% if recent_entries %}
+    <section class="journal-feed" aria-label="최근 글">
+      {% for entry in recent_entries %}
+      <article class="journal-story{% if loop.first %} journal-featured{% endif %}">
+        {% if entry.item.meta.get('feature_image') %}
+        <a class="journal-image" href="{{ content_url(entry.item) }}" tabindex="-1" aria-hidden="true">
+          <img src="{{ BASE_URL }}/{{ entry.item.meta.feature_image }}" alt="" width="1440" height="960" {% if loop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %}>
+        </a>
+        {% endif %}
+        <div class="journal-story-body">
+          <span class="journal-category">{{ entry.category_label }}</span>
+          <h2><a href="{{ content_url(entry.item) }}">{{ entry.item.title }}</a></h2>
+          <p>{{ entry.item.description }}</p>
+          <div class="journal-story-meta">
+            <span>{{ AUTHOR_NAME }}</span>
+            <time datetime="{{ entry.item.published_date }}">{{ entry.item.published_date }}</time>
+          </div>
+        </div>
+      </article>
+      {% endfor %}
+    </section>
+    {% endif %}
+    <a class="journal-all-posts" href="{{ BASE_URL }}{{ POSTS_URL_PREFIX }}/">모든 글 보기 <span aria-hidden="true">&rarr;</span></a>
+  </main>
+  {{ FOOTER_HTML }}
+</body>
+</html>
