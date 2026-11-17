@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import io
+import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -10,11 +12,15 @@ import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
+from xml.etree import ElementTree as etree
 
 import yaml
 
 from naru.cli import main
-from naru.config import ConfigError, load_config
+from naru.config import BuildConfig, ConfigError, load_config
+from naru.engine.ads import render_ad, render_infeed_ad
+from naru.engine.config import use_config
+from naru.engine.templates import current_templates, use_templates
 
 EXAMPLE_CONFIG = (
     Path(__file__).resolve().parents[1] / "examples" / "basic-site" / "naru.yml"
@@ -270,6 +276,129 @@ class BuildConfigurationTests(unittest.TestCase):
         archive = (output / "posts" / "index.html").read_text(encoding="utf-8")
         self.assertIn("<strong>Hello &lt;world&gt;</strong>", home)
         self.assertIn("<b>Hello &lt;world&gt;</b>", archive)
+
+    def test_post_metadata_is_escaped_and_can_be_customized(self) -> None:
+        (self.root / "static" / "tools").rmdir()
+        data = yaml.safe_load(self.config.read_text(encoding="utf-8"))
+        data["author_name"] = "Writer <b>"
+        data["author_note_default"] = "Note <i>"
+        self.config.write_text(yaml.safe_dump(data), encoding="utf-8")
+        (self.root / "content" / "posts" / "hello.md").write_text(
+            "---\ntitle: 'Hello <world>'\nnav_title: Hello\nslug: hello\n"
+            "description: Example\npublished_date: 2020-01-01\n"
+            "updated_date: 2020-01-01\ncategory: blog\ntags: ['A <tag>']\n"
+            "---\nBody\n\n## A heading\n", encoding="utf-8",
+        )
+        (self.root / "content" / "posts" / "other.md").write_text(
+            "---\ntitle: 'Other <world>'\nnav_title: Other\nslug: other\n"
+            "description: Example\npublished_date: 2020-01-01\n"
+            "updated_date: 2020-01-01\ncategory: blog\ntags: []\n---\nOther\n",
+            encoding="utf-8",
+        )
+        args = ["build", "--site-root", str(self.root), "--output", "output"]
+        self.assertEqual(main(args), 0)
+        output = self.root / "output" / "posts" / "hello" / "index.html"
+        rendered = output.read_text(encoding="utf-8")
+        self.assertIn("작성: Writer &lt;b&gt;", rendered)
+        self.assertIn("A &lt;tag&gt;</a>", rendered)
+        self.assertNotIn("A &amp;lt;tag&amp;gt;", rendered)
+        self.assertIn("<p>Body</p>", rendered)
+        self.assertIn("Other &lt;world&gt;</span>", rendered)
+        (self.root / "templates" / "partial_post_meta.html").write_text(
+            "<b>{{ category_label }}:{{ reading_minutes }}:{{ page.title }}</b>",
+            encoding="utf-8",
+        )
+        for name, source in (
+            ("partial_author_box.html", "<aside>{{ note }}</aside>"),
+            ("partial_post_byline.html", "<small>{{ AUTHOR_NAME }}</small>"),
+            ("partial_related_posts.html",
+             "<section>{% for entry in related_entries %}"
+             "{{ entry.item.title }}{% endfor %}</section>"),
+        ):
+            (self.root / "templates" / name).write_text(source, encoding="utf-8")
+        self.assertEqual(main(args), 0)
+        customized = output.read_text(encoding="utf-8")
+        self.assertIn("<b>Blog:1:Hello &lt;world&gt;</b>", customized)
+        self.assertIn("<aside>Note &lt;i&gt;</aside>", customized)
+        self.assertIn("<small>Writer &lt;b&gt;</small>", customized)
+        self.assertIn("<section>Other &lt;world&gt;</section>", customized)
+
+    def test_ad_templates_preserve_and_escape_attributes(self) -> None:
+        settings = load_config(self.config)
+        settings["adsense_pub_id"] = 'pub"<&'
+        slot = 'slot" data-unexpected="true'
+        config = BuildConfig(self.root, self.root / "output", settings)
+        with use_config(config), use_templates(settings):
+            standard = etree.fromstring("<root>" + render_ad(slot) + "</root>")
+            ad = standard.find("ins")
+            self.assertEqual(ad.get("data-ad-client"), settings["adsense_pub_id"])
+            self.assertEqual(ad.get("data-ad-slot"), slot)
+            self.assertIsNone(ad.get("data-unexpected"))
+            self.assertEqual(ad.get("data-full-width-responsive"), "true")
+            infeed = etree.fromstring(
+                "<root>" + render_infeed_ad(slot, 'layout"<&') + "</root>"
+            ).find("ins")
+            self.assertEqual(infeed.get("data-ad-layout-key"), 'layout"<&')
+            self.assertIsNone(infeed.get("data-ad-format"))
+            fluid = etree.fromstring(
+                "<root>" + render_infeed_ad(slot) + "</root>"
+            ).find("ins")
+            self.assertEqual(fluid.get("data-ad-format"), "fluid")
+            self.assertEqual(render_ad(""), "")
+        with self.assertRaises(LookupError):
+            current_templates()
+
+    def test_seo_templates_and_xml_escape_data(self) -> None:
+        (self.root / "static" / "tools").rmdir()
+        settings = yaml.safe_load(self.config.read_text(encoding="utf-8"))
+        settings["site_name"] = "Site <name> &"
+        self.config.write_text(yaml.safe_dump(settings), encoding="utf-8")
+        title = "</script><b>&"
+        metadata = {
+            "title": title, "nav_title": title, "slug": "escaping",
+            "description": "A & <description>", "published_date": "2020-01-01",
+            "updated_date": "2020-01-01", "tags": [],
+        }
+        (self.root / "content" / "posts" / "escaping.md").write_text(
+            "---\n" + yaml.safe_dump(metadata) + "---\nBody\n", encoding="utf-8"
+        )
+        args = ["build", "--site-root", str(self.root), "--output", "output"]
+        self.assertEqual(main(args), 0)
+        output = self.root / "output"
+        post = (output / "posts" / "escaping" / "index.html").read_text("utf-8")
+        payload = re.search(
+            r'<script type="application/ld\+json">(.*?)</script>', post, re.DOTALL
+        ).group(1)
+        self.assertEqual(json.loads(payload)["headline"], title)
+        self.assertNotIn("</script>", payload)
+        rss = etree.parse(output / "rss.xml")
+        self.assertEqual(rss.findtext("channel/item/title"), title)
+        self.assertEqual(
+            rss.findtext("channel/item/description"), metadata["description"]
+        )
+        self.assertEqual(
+            (output / "rss.xml").read_bytes(), (output / "feed.xml").read_bytes()
+        )
+        sitemap = etree.parse(output / "sitemap.xml")
+        self.assertTrue(sitemap.findall("{*}url/{*}loc"))
+        svg = etree.parse(output / "assets" / "og-escaping.svg")
+        self.assertIn(title, "".join(svg.getroot().itertext()))
+        custom_svg = self.root / "templates" / "image_og.svg"
+        custom_svg.write_text(
+            '<svg xmlns="http://www.w3.org/2000/svg" id="custom-og">'
+            '<text>{{ title_line1 }}</text></svg>', encoding="utf-8",
+        )
+        self.assertEqual(main(args), 0)
+        customized = etree.parse(output / "assets" / "og-escaping.svg")
+        self.assertEqual(customized.getroot().get("id"), "custom-og")
+        previous = (output / "index.html").read_bytes()
+        custom_svg.write_text("{% if %}", encoding="utf-8")
+        stderr = io.StringIO()
+        with redirect_stderr(stderr), self.assertRaises(SystemExit) as result:
+            main(args)
+        self.assertEqual(result.exception.code, 2)
+        self.assertIn("image_og.svg", stderr.getvalue())
+        self.assertEqual((output / "index.html").read_bytes(), previous)
 
     def test_build_cli_uses_explicit_pages_url(self) -> None:
         self.config.write_text(

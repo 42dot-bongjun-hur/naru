@@ -11,14 +11,8 @@ from html.parser import HTMLParser
 from importlib.resources import files
 from pathlib import Path
 from urllib.parse import quote, unquote, urljoin, urlsplit
-from xml.sax.saxutils import escape, quoteattr
 
 from jinja2 import (
-    ChoiceLoader,
-    Environment,
-    FileSystemLoader,
-    PackageLoader,
-    StrictUndefined,
     TemplateError,
     TemplateNotFound,
     meta,
@@ -48,6 +42,13 @@ from .seo import (
     generate_robots,
     generate_rss,
     generate_sitemap,
+)
+from .templates import (
+    TemplateFragment,
+    current_templates,
+    default_template_names,
+    render_template,
+    use_templates,
 )
 
 CSS_VERSION: ContextVar[str] = ContextVar("naru_css_version", default="")
@@ -210,42 +211,6 @@ def sync_post_images(items, docs_assets):
     )
     print(f"[OK] 게시물 이미지 동기화 완료 ({copied_count}개)")
 
-def create_template_environment(settings: dict) -> Environment:
-    environment = Environment(
-        loader=ChoiceLoader([
-            FileSystemLoader(engine_config.TPL_DIR),
-            PackageLoader("naru", "defaults/templates"),
-        ]),
-        autoescape=True,
-        undefined=StrictUndefined,
-    )
-    environment.globals.update(
-        site=settings,
-        content_url=content_path,
-        tag_url=tag_path,
-        archive_url=archive_path,
-        site_root_url=site_root_path,
-        **{
-            key.upper(): value
-            for key, value in settings.items()
-        },
-    )
-    return environment
-
-
-class TemplateFragment:
-    def __init__(self, environment, name, context):
-        self.environment = environment
-        self.name = name
-        self.context = context
-
-    def __html__(self):
-        template = self.environment.get_template(self.name)
-        return template.render(**self.context)
-
-    def __bool__(self):
-        return bool(self.__html__())
-
 def render_head(
     tpl_head, title, description, tags, canonical_path, og_image,
     og_type="website", robots="index, follow",
@@ -272,20 +237,7 @@ def render_nav(tpl_nav, nav_right_html, top_nav_links):
     )
 
 def home_group_icon(icon_name):
-    paths = {
-        "briefcase": '<rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M10 12v2h4v-2"/>',
-        "code": '<path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14"/>',
-        "spark": '<path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="m19 16 .8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8L19 16Z"/>',
-        "pen": '<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/>',
-        "wrench": '<path d="M14.7 6.3a5 5 0 0 0-6.4 6.4L3 18l3 3 5.3-5.3a5 5 0 0 0 6.4-6.4L14 13l-3-3 3.7-3.7Z"/>',
-    }
-    return (
-        '<svg aria-hidden="true" viewBox="0 0 24 24" fill="none" '
-        'stroke="currentColor" stroke-width="1.7" stroke-linecap="round" '
-        'stroke-linejoin="round">'
-        + paths.get(icon_name, paths["spark"])
-        + "</svg>"
-    )
+    return render_template("partial_group_icon.svg", icon_name=icon_name)
 
 def render_category_group_links(class_name):
     links = []
@@ -296,15 +248,15 @@ def render_category_group_links(class_name):
             else f"{site_root_path()}#home-group-{icon_name}"
         )
         links.append(
-            f'<a class="{class_name}-link" href="{href}">'
-            f'{home_group_icon(icon_name)}<span>{escape(label)}</span></a>'
+            {"href": href, "label": label, "class_name": f"{class_name}-link",
+             "icon": Markup(home_group_icon(icon_name))}
         )
-    return "".join(links)
+    return render_template("partial_nav_links.html", links=links, list_items=False)
 
 def render_footer(tpl_footer, site_domain, pages=()):
-    info_links = "".join(
-        f'<a href="{content_path(page)}">{escape(page["nav_title"])}</a>'
-        for page in pages
+    info_links = render_template(
+        "partial_nav_links.html", list_items=False,
+        links=[{"href": content_path(page), "label": page["nav_title"]} for page in pages],
     )
     return tpl_footer.render(
         SITE_DOMAIN=site_domain,
@@ -358,7 +310,7 @@ def build_home(items, tpl_home, tpl_head, tpl_nav, footer_html, docs_assets, sit
     latest_date = max(all_dates) if all_dates else ""
     nav_html = render_nav(
         tpl_nav,
-        f'<span class="nav-status-pill">UPDATED {escape(latest_date)}</span>',
+        render_template("partial_nav_status.html", latest_date=latest_date),
         top_nav_links,
     )
 
@@ -447,7 +399,9 @@ def build_home(items, tpl_home, tpl_head, tpl_nav, footer_html, docs_assets, sit
         TOPIC_LINKS=Markup(""),
         FOOTER_HTML=Markup(footer_html),
         SLOGAN_EN_PLAIN=engine_config.SITE_SLOGAN_EN,
-        SLOGAN_EN=Markup(re.sub(r"\b(Dev|B|J)", r'<span class="slogan-initial">\1</span>', escape(engine_config.SITE_SLOGAN_EN).replace(" Just", "<br>Just"), count=3)),
+        SLOGAN_EN=Markup(render_template("partial_slogan.html", parts=re.split(
+            r"(\b(?:Dev|B|J))", engine_config.SITE_SLOGAN_EN.replace(" Just", "\nJust"), maxsplit=3
+        ))),
         SLOGAN_KO=engine_config.SITE_SLOGAN_KO,
         RECENT_POSTS=TemplateFragment(
             tpl_home.environment, "partial_home_recent.html", home_context
@@ -503,11 +457,7 @@ def build_catalog(item, nav_items_list, category_nav_list, tpl_cat, tpl_head, tp
             ],
         },
     }
-    json_ld = (
-        '<script type="application/ld+json">'
-        + json.dumps(catalog_schema, ensure_ascii=False).replace("</", "<\\/")
-        + "</script>"
-    )
+    json_ld = render_template("partial_json_ld.html", schema=catalog_schema)
 
     head_html = render_head(
         tpl_head,
@@ -521,18 +471,18 @@ def build_catalog(item, nav_items_list, category_nav_list, tpl_cat, tpl_head, tp
 
     nav_html = render_nav(
         tpl_nav,
-        f'<a href="{site_root_path()}" class="nav-back-link">← 전체 홈</a>',
+        render_template("partial_nav_links.html", list_items=False, links=[{
+            "href": site_root_path(), "label": "← 전체 홈", "class_name": "nav-back-link",
+        }]),
         top_nav_links,
     )
 
-    toc_items = "".join([
-        f'<li><a href="#sec-{s.get("id")}">{i+1:02d}. {escape(s.get("name", ""))}</a></li>\n'
-        for i, s in enumerate(sites)
+    toc_items = render_template("partial_toc.html", headings=[
+        {"id": f"sec-{site.get('id')}", "name": site.get("name", "")}
+        for site in sites
     ])
-    intro_guide_html = (
-        '<section class="catalog-guide-section" aria-label="이용 안내 및 가이드">'
-        + item["markdown_intro_html"]
-        + '</section>'
+    intro_guide_html = render_template(
+        "partial_catalog_intro.html", intro_html=Markup(item["markdown_intro_html"]),
     )
     ad_in_table = Markup(render_ad(engine_config.AD_SLOT_MID))
     context = {
@@ -652,11 +602,6 @@ def build_hubs(items):
         ]
         if not members:
             continue
-        rows = "".join(
-            f'<li><a href="{content_path(p)}"><strong>{escape(p["title"])}</strong></a>'
-            f'<br><span class="related-post-date">{escape(p["updated_date"])}  /  {escape(p["description"])}</span></li>\n'
-            for p in members
-        )
         hubs.append({
             "slug": info["slug"],
             "type": "hub",
@@ -667,7 +612,7 @@ def build_hubs(items):
             "published_date": max(p["published_date"] for p in members),
             "updated_date": max(p["updated_date"] for p in members),
             "badge": f"#{category}",
-            "html_content": f"<ul class=\"hub-post-list\">\n{rows}</ul>",
+            "html_content": render_template("partial_hub_posts.html", members=members),
             "toc_tokens": [],
             "meta": {},
         })
@@ -675,29 +620,16 @@ def build_hubs(items):
 
 
 def build_category_redirects():
-    for old_slug, new_slug in engine_config.CATEGORY_REDIRECTS.items():
-        target_url = archive_path(engine_config.CATEGORY_URL_PREFIX, new_slug)
-        target_label = engine_config.CATEGORY_LABELS.get(new_slug.upper(), new_slug)
-        output_path = engine_config.OUT_DIR / engine_config.CATEGORY_URL_PREFIX.strip("/") / old_slug / "index.html"
-        claim_output(output_path, f"category redirect {old_slug}")
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(
-            f"""<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8">
-  <meta name="robots" content="noindex, follow">
-  <link rel="canonical" href={quoteattr(engine_config.SITE_ORIGIN + target_url)}>
-  <meta http-equiv="refresh" content={quoteattr(f"0;url={target_url}")}>
-  <title>카테고리 이동</title>
-</head>
-<body>
-  <p>카테고리 주소가 변경되었습니다. <a href={quoteattr(target_url)}>{escape(target_label)} 노트로 이동</a></p>
-</body>
-</html>
-""",
-            encoding="utf-8",
-        )
+        for old_slug, new_slug in engine_config.CATEGORY_REDIRECTS.items():
+                target_url = archive_path(engine_config.CATEGORY_URL_PREFIX, new_slug)
+                target_label = engine_config.CATEGORY_LABELS.get(new_slug.upper(), new_slug)
+                output_path = engine_config.OUT_DIR / engine_config.CATEGORY_URL_PREFIX.strip("/") / old_slug / "index.html"
+                claim_output(output_path, f"category redirect {old_slug}")
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                output_path.write_text(
+                        render_template("template_redirect.html", target_url=target_url, target_label=target_label),
+                        encoding="utf-8",
+                )
 
 
 def build_archive_page(
@@ -765,11 +697,11 @@ def build_post_archives(content_items, tpl_archive, tpl_head, tpl_nav, footer_ht
         if page_number > 1:
             previous_slug = "" if page_number == 2 else str(page_number - 1)
             pagination_links.append(
-                f'<a href="{archive_path(engine_config.POSTS_URL_PREFIX, previous_slug)}">← 이전</a>'
+                {"href": archive_path(engine_config.POSTS_URL_PREFIX, previous_slug), "label": "← 이전"}
             )
         if page_number < page_count:
             pagination_links.append(
-                f'<a href="{archive_path(engine_config.POSTS_URL_PREFIX, str(page_number + 1))}">다음 →</a>'
+                {"href": archive_path(engine_config.POSTS_URL_PREFIX, str(page_number + 1)), "label": "다음 →"}
             )
         output_path = engine_config.OUT_DIR / engine_config.POSTS_URL_PREFIX.strip("/")
         if slug:
@@ -783,7 +715,7 @@ def build_post_archives(content_items, tpl_archive, tpl_head, tpl_nav, footer_ht
             route,
             page_items,
             output_path,
-            "".join(pagination_links),
+            render_template("partial_nav_links.html", links=pagination_links, list_items=False),
             robots="index, follow" if page_number == 1 else "noindex, follow",
         )
     return archive_paths
@@ -899,32 +831,23 @@ def render_related_posts(posts, hubs, category=None, exclude_slug=None, limit=3,
     picked = (same + [p for p in candidates if p not in same])[:limit]
     if not picked:
         return ""
-    rows = "".join(
-        f'<a class="related-post-item" href="{content_path(p)}">'
-        f'<span class="related-post-cat">[{escape(display_category_label(p.get("meta", {}).get("category")))}]</span>'
-        f'<span class="related-post-title">{escape(p["title"])}</span>'
-        f'<span class="related-post-date">{escape(p["updated_date"])}</span></a>'
-        for p in picked
-    )
     hub = next((h for h in hubs if category and h["category"] == category.upper()), None)
-    hub_link = (
-        f'<a class="related-post-more" href="{content_path(hub)}">{escape(hub["nav_title"])} 전체 보기 →</a>'
-        if hub else ""
+    return render_template(
+        "partial_related_posts.html",
+        related_entries=[{
+            "item": post,
+            "category_label": display_category_label(post.get("meta", {}).get("category")),
+        } for post in picked],
+        hub=hub,
+        heading=heading,
     )
-    return f"""
-    <aside class="related-posts-box" aria-label="관련 글">
-      <h2 class="related-posts-title">{escape(heading)}</h2>
-      <div class="related-post-list">{rows}</div>
-      {hub_link}
-    </aside>
-    """
 
 
 def render_ad_block():
     ad_html = render_ad(engine_config.AD_SLOT_MID, ad_format="auto", full_width_responsive=True)
     if not ad_html:
         return ""
-    return f'<div class="post-inline-ad" aria-label="광고"><span>광고</span>{ad_html}</div>'
+    return render_template("partial_ad_block.html", placement="inline", ad_html=Markup(ad_html))
 
 
 def insert_inline_ad(html, min_sections=3):
@@ -949,15 +872,7 @@ def insert_inline_ad(html, min_sections=3):
 
 def render_author_box(category=None):
     note = engine_config.AUTHOR_NOTES.get(str(category or "").upper(), engine_config.AUTHOR_NOTE_DEFAULT)
-    return f"""
-    <aside class="author-box" aria-label="글쓴이 소개">
-      <div class="author-box-copy">
-        <span class="author-box-name">{escape(engine_config.AUTHOR_NAME)}</span>
-        <p>{escape(engine_config.AUTHOR_BIO)}</p>
-        <p class="author-box-note">{escape(note)}</p>
-      </div>
-    </aside>
-    """
+    return render_template("partial_author_box.html", note=note)
 
 
 def build_post(item, catalog_nav_list, category_nav_list, tpl_post, tpl_head, tpl_nav, footer_html, docs_assets, site_domain, posts=(), hubs=(), top_nav_links=""):
@@ -979,7 +894,9 @@ def build_post(item, catalog_nav_list, category_nav_list, tpl_post, tpl_head, tp
     )
     nav_html = render_nav(
         tpl_nav,
-        f'<a href="{site_root_path()}" class="nav-back-link">← 전체 홈</a>',
+        render_template("partial_nav_links.html", list_items=False, links=[{
+            "href": site_root_path(), "label": "← 전체 홈", "class_name": "nav-back-link",
+        }]),
         top_nav_links,
     )
     toc_tokens = item.get("toc_tokens", [])
@@ -993,50 +910,38 @@ def build_post(item, catalog_nav_list, category_nav_list, tpl_post, tpl_head, tp
     append_headings(toc_tokens)
     toc_items = []
     post_headings = [heading for heading in post_headings if heading.get("level", 0) >= 2]
-    for index, heading in enumerate(post_headings, start=1):
+    for heading in post_headings:
         name = heading["name"]
         prefix, separator, remainder = name.partition(". ")
         if separator and prefix.isdecimal():
             name = remainder
-        toc_items.append(
-            f'<li><a href={quoteattr("#" + heading["id"])}>'
-            f'{index:02d}. {escape(name)}</a></li>\n'
-        )
-    toc_items = "".join(toc_items)
+        toc_items.append({"id": heading["id"], "name": name})
+    toc_items = render_template("partial_toc.html", headings=toc_items)
     content_html = item["html_content"]
     json_ld = ""
     byline = ""
     post_meta = ""
-    top_ad_block = f"""
-    <div class="journal-masthead-wrap">
-      <div class="top-leaderboard-ad" aria-label="상단 광고">
-        {render_ad(engine_config.AD_SLOT_TOP, ad_format="horizontal", full_width_responsive=True)}
-      </div>
-    </div>
-    """
-    side_ad_block = f'<div class="sidebar-ad-box">{render_ad(engine_config.AD_SLOT_SIDE)}</div>'
+    top_ad_block = render_template(
+        "partial_ad_block.html", placement="top",
+        ad_html=Markup(render_ad(engine_config.AD_SLOT_TOP, ad_format="horizontal")),
+    )
+    side_ad_block = render_template(
+        "partial_ad_block.html", placement="side",
+        ad_html=Markup(render_ad(engine_config.AD_SLOT_SIDE)),
+    )
     if item["type"] == "post":
         content_html = insert_inline_ad(content_html)
         content_html += render_ad_block()
         content_html += render_author_box(meta.get("category"))
         content_html += render_related_posts(posts, hubs, meta.get("category"), exclude_slug=slug)
-        byline = f'<span class="post-byline">글 {escape(engine_config.AUTHOR_NAME)}</span>'
+        byline = render_template("partial_post_byline.html")
         plain_text = re.sub(r"<[^>]+>", " ", item["html_content"])
         reading_minutes = max(1, round(len(re.sub(r"\s+", "", plain_text)) / 500))
-        category = escape(display_category_label(meta.get("category")))
-        tag_links = " ".join(
-            f'<a href="{tag_path(tag_slug)}">{escape(tag_label)}</a>'
-            for tag_slug, tag_label in item.get("tag_routes", [])
+        post_meta = TemplateFragment(
+            tpl_post.environment,
+            "partial_post_meta.html",
+            dict(page=item, category_label=display_category_label(meta.get("category")), reading_minutes=reading_minutes),
         )
-        post_meta = f"""
-        <div class="catalog-meta-bar post-meta-bar" aria-label="글 정보">
-          <span class="post-meta-category">{category}</span>
-          <span>발행일: {escape(item["published_date"])}</span>
-          <span>예상 읽기 시간: 약 {reading_minutes}분</span>
-          <span>작성: {escape(engine_config.AUTHOR_NAME)}</span>
-          <span class="post-tags">{tag_links}</span>
-        </div>
-        """
         ld = {
             "@context": "https://schema.org",
             "@type": "Article",
@@ -1047,7 +952,7 @@ def build_post(item, catalog_nav_list, category_nav_list, tpl_post, tpl_head, tp
             "author": {"@type": "Person", "name": engine_config.AUTHOR_NAME},
             "mainEntityOfPage": f"{engine_config.SITE_ORIGIN}{content_path(item)}",
         }
-        json_ld = '<script type="application/ld+json">' + json.dumps(ld, ensure_ascii=False).replace("</", "<\\/") + "</script>"
+        json_ld = render_template("partial_json_ld.html", schema=ld)
     elif item["type"] == "page":
         top_ad_block = ""
         side_ad_block = ""
@@ -1098,13 +1003,13 @@ def build(config: BuildConfig):
             config.site_root, staged_output, config.settings,
             config.include_drafts, config.include_future,
         )
-        with use_config(staged_config), track_output_paths():
+        with use_config(staged_config), track_output_paths(), use_templates(config.settings):
             try:
                 completion_message = _build(staged_config)
             except TemplateError as error:
                 frames = traceback.extract_tb(error.__traceback__)
                 template_frame = next(
-                    (frame for frame in reversed(frames) if frame.filename.endswith(".html")),
+                    (frame for frame in reversed(frames) if frame.filename.endswith((".html", ".svg"))),
                     None,
                 )
                 filename = getattr(error, "filename", None) or (
@@ -1147,7 +1052,7 @@ def _build(config: BuildConfig):
     )
     claim_output(engine_config.OUT_DIR / ".naru-output", "Naru output marker")
     register_source_outputs()
-    templates = create_template_environment(config.settings)
+    templates = current_templates()
     tpl_home = templates.get_template("template_index.html")
     tpl_cat = templates.get_template("template_catalog.html")
     tpl_post = templates.get_template("template_post.html")
@@ -1155,11 +1060,7 @@ def _build(config: BuildConfig):
     tpl_head = templates.get_template("partial_head.html")
     tpl_nav = templates.get_template("partial_nav.html")
     tpl_footer = templates.get_template("partial_footer.html")
-    pending = [
-        "template_index.html", "template_catalog.html", "template_post.html",
-        "template_archive.html", "partial_head.html", "partial_nav.html",
-        "partial_footer.html", "partial_googletag.html", "partial_catalog_entries.html",
-    ]
+    pending = default_template_names()
     checked = set()
     while pending:
         name = pending.pop()
@@ -1223,12 +1124,11 @@ def _build(config: BuildConfig):
     nav_li_list = []
     for item in ordered_catalogs:
         short_date = item.get("updated_date", "")[5:].replace("-", ".")
-        date_span = f' <span class="sidebar-date">{short_date}</span>' if short_date else ""
         nav_li_list.append(
-            f'<li><a href="{content_path(item)}">{escape(item["nav_title"])}{date_span}</a></li>\n'
+            {"href": content_path(item), "label": item["nav_title"], "date": short_date}
         )
 
-    catalog_nav_list = "".join(nav_li_list)
+    catalog_nav_list = render_template("partial_nav_links.html", links=nav_li_list, list_items=True)
     hubs = build_hubs(items)
     top_nav_links = render_category_group_links("nav-group")
     nav_html = render_nav(tpl_nav, "", top_nav_links)
@@ -1242,7 +1142,7 @@ def _build(config: BuildConfig):
         item for item in items if item["type"] in {"post", "catalog"}
     ]
     category_nav_items = [
-        f'<li><a href="{site_root_path()}">🏠 전체 콘텐츠</a></li>'
+        {"href": site_root_path(), "label": "🏠 전체 콘텐츠"}
     ]
     for hub in hubs:
         count = sum(
@@ -1250,10 +1150,9 @@ def _build(config: BuildConfig):
             for item in categorized_items
         )
         category_nav_items.append(
-            f'<li><a href="{content_path(hub)}">{escape(hub["nav_title"])}'
-            f' <span class="sidebar-count">{count}</span></a></li>'
+            {"href": content_path(hub), "label": hub["nav_title"], "count": count}
         )
-    category_nav_list = "".join(category_nav_items)
+    category_nav_list = render_template("partial_nav_links.html", links=category_nav_items, list_items=True)
 
     archive_paths = [build_category_index(
         hubs, tpl_archive, tpl_head, tpl_nav, footer_html, docs_assets,

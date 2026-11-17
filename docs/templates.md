@@ -52,8 +52,8 @@ Naru는 Jinja2로 HTML 템플릿을 렌더링합니다. 사이트의 `templates/
 최근 글과 카테고리 이름을, `archive_entries`는 목록 항목과 URL을 담습니다.
 기본 화면은 `partial_home_groups.html`, `partial_home_recent.html`,
 `partial_archive_items.html`을 사용하며 같은 이름의 파일로 덮어쓸 수 있습니다.
-카탈로그의 `sites`는 목록 파일의 항목입니다. 일부 내부 HTML
-조각은 현재 Python에서 생성하므로 Jinja2만으로 모든 내부 구조를 바꾸지는 못합니다.
+카탈로그의 `sites`는 목록 파일의 항목입니다. 글의 부가 정보와 공통 링크,
+광고, OG 이미지도 아래의 부분 템플릿에서 정의합니다.
 
 공통 부분 템플릿에서는 사이트 설정 외에 다음 변수를 사용할 수 있습니다.
 
@@ -70,6 +70,49 @@ Naru는 Jinja2로 HTML 템플릿을 렌더링합니다. 사이트의 `templates/
 기존 CSS와의 우선순위를 설명합니다. 검증된 테마 설정은 `site.theme`으로
 접근할 수 있습니다.
 
+## 엔진 부분 템플릿
+
+Python 엔진은 콘텐츠 선택·URL·읽기 시간·광고 위치 같은 데이터를 계산하고,
+화면 마크업은 부분 템플릿에서 렌더링합니다. 다음 파일을 사이트의 `templates/`에
+두면 해당 부분만 변경할 수 있습니다. 모든 파일에서 `site`와 공통 설정 변수에
+접근할 수 있으며, 표의 변수는 각 렌더링 호출에 추가로 전달됩니다.
+
+| 파일 | 추가 변수 |
+| --- | --- |
+| `partial_post_meta.html` | `page`, `category_label`, `reading_minutes` |
+| `partial_post_byline.html` | 공통 작성자 설정 |
+| `partial_author_box.html` | 카테고리별 작성자 메모인 `note` |
+| `partial_related_posts.html` | `related_entries` (`item`, `category_label`), `hub`, `heading` |
+| `partial_toc.html` | 평탄화한 `headings` (`id`, `name`) |
+| `partial_nav_links.html` | `links`, `<li>` 사용 여부인 `list_items` |
+| `partial_nav_status.html` | `latest_date` |
+| `partial_group_icon.svg` | `icon_name` |
+| `partial_hub_posts.html` | 카테고리 콘텐츠 목록인 `members` |
+| `partial_catalog_intro.html` | 렌더링된 Markdown인 `intro_html` |
+| `partial_ad.html` | `slot_id`, `ad_format`, `infeed`, `layout_key`; 일반 광고의 `full_width_responsive` |
+| `partial_ad_block.html` | `placement` (`top`, `side`, `inline`), 렌더링된 `ad_html` |
+| `partial_json_ld.html` | 구조화된 `schema`; 기본 템플릿은 `tojson` 필터 사용 |
+| `partial_slogan.html` | 일반 텍스트와 강조 문구가 교대로 담긴 `parts` |
+| `template_redirect.html` | `target_url`, `target_label` |
+| `image_og.svg` | `code_label`, `title_line1`, `title_line2`, `site_domain` |
+
+`links` 항목에는 `href`, `label`이 있으며 용도에 따라 `class_name`, `icon`,
+`date`, `count`가 추가됩니다. `icon`은 렌더링된 SVG이고 다른 값은 일반 데이터입니다.
+`hub`는 없으면 `None`입니다. 선택적 필드는 `.get()`이나 `default`로 처리하세요.
+
+예를 들어 작성자 표시만 변경하려면 `templates/partial_post_byline.html`에
+다음을 작성합니다.
+
+```jinja
+<small class="post-byline">{{ AUTHOR_NAME }}의 기록</small>
+```
+
+기존 `POST_META`, `BYLINE`, `TOC_ITEMS`, `CONTENT_HTML`, `CAT_NAV_LINKS`,
+`CATEGORY_NAV_LINKS`, `PAGINATION` 등 대문자 변수는 유지됩니다. 기존 사이트의
+전체 페이지 템플릿을 수정하지 않아도 내부 조각은 새 부분 템플릿을 사용합니다.
+Markdown 자체의 변환은 Markdown 확장이 담당하며, RSS·sitemap은 화면 템플릿이
+아니라 표준 XML API로 직렬화합니다.
+
 ## 안전과 호환성
 
 텍스트와 HTML 속성은 기본적으로 자동 이스케이프됩니다. `HEAD_HTML`,
@@ -79,7 +122,8 @@ Markdown에 직접 쓴 HTML은 정화하지 않으므로 신뢰할 수 있는 �
 
 정의되지 않은 변수는 오류입니다. 선택적 값에는 `default` 필터나 `is defined`
 조건을 사용하세요. 최상위 및 정적으로 참조된 템플릿 문법은 출력 정리 전에
-검사합니다. 동적 include나 렌더링 중의 미정의 변수 오류는 빌드 도중에 발생할 수
+검사하며 엔진이 사용하는 기본 HTML·SVG 템플릿도 검사 대상입니다.
+동적 include나 렌더링 중의 미정의 변수 오류는 빌드 도중에 발생할 수
 있지만 임시 출력에서 빌드하므로 기존 출력은 유지됩니다.
 
 기존 대문자 자리 표시자는 해당 템플릿에서 계속 사용할 수 있지만, 다른 템플릿의

@@ -1,0 +1,5 @@
+<ul class="hub-post-list">
+  {% for item in members %}
+  <li><a href="{{ content_url(item) }}"><strong>{{ item.title }}</strong></a><br><span class="related-post-date">{{ item.updated_date }} / {{ item.description }}</span></li>
+  {% endfor %}
+</ul>

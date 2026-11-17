@@ -1,0 +1,3 @@
+{% for heading in headings %}
+<li><a href="#{{ heading.id }}">{{ '%02d'|format(loop.index) }}. {{ heading.name }}</a></li>
+{% endfor %}

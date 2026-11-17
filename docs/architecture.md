@@ -60,9 +60,10 @@ Naru는 다른 사이트의 출력이나 입력 디렉터리를 빌드 결과로
 - `naru.cli`: 명령행 인자, 출력 경로 검증과 빌드 프로세스 실행
 - `naru.config`: 사이트 설정 로딩 및 검증
 - `naru.engine.loader`, `metadata`: 콘텐츠 로딩과 front matter 정규화
-- `naru.engine.build`, `routes`: 페이지 렌더링과 URL·출력 경로 계산
-- `naru.engine.seo`: RSS, sitemap, robots.txt와 검색 엔진 메타데이터
-- `naru.engine.ads`: 광고 단위 렌더링
+- `naru.engine.build`, `routes`: 페이지 데이터 구성과 URL·출력 경로 계산
+- `naru.engine.templates`: 빌드 범위의 Jinja 환경, 사이트별 재정의와 부분 렌더링
+- `naru.engine.seo`: RSS·sitemap의 XML 직렬화, robots.txt와 OG 템플릿 데이터
+- `naru.engine.ads`: 광고 렌더링 조건과 부분 템플릿 데이터
 
 `content/posts/`와 `content/pages/`의 Markdown을 읽습니다. 카탈로그는 글의
 front matter에 `layout: catalog`를 지정하고, 목록은 같은 폴더의 동명
@@ -101,7 +102,11 @@ CLI는 검증한 사이트 설정과 입출력 경로를 빌드 설정 객체로
 Jinja2로 템플릿을 렌더링하며 자동 이스케이프와 엄격한 미정의 변수 검사를
 사용합니다. 사이트 템플릿을 패키지 기본 템플릿보다 먼저 찾고, 공통 HTML과
 Markdown 렌더링 결과만 명시적으로 HTML 조각으로 전달합니다. 기본 카탈로그 항목은
-템플릿에서 직접 반복합니다. 변수 계약과 호환성은 [템플릿 가이드](templates.md)에
+템플릿에서 직접 반복합니다. 글 메타정보·관련 글·작성자·목차·공통 링크·광고·
+리다이렉트·OG 이미지도 기본 템플릿이 소유합니다. Python은 표시할 항목과 값을
+준비하며 JSON-LD는 Jinja의 `tojson`, RSS·sitemap은 ElementTree로 직렬화합니다.
+Jinja 환경도 설정과 함께 빌드가 끝나면 정리되어 다음 사이트에 남지 않습니다.
+변수 계약과 호환성은 [템플릿 가이드](templates.md)에
 정리합니다.
 
 ## 초기 설정 스케치

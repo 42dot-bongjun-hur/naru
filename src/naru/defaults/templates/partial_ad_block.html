@@ -1,0 +1,9 @@
+{% if placement == 'inline' %}
+<div class="post-inline-ad" aria-label="광고"><span>광고</span>{{ ad_html }}</div>
+{% elif placement == 'top' %}
+<div class="journal-masthead-wrap">
+  <div class="top-leaderboard-ad" aria-label="상단 광고">{{ ad_html }}</div>
+</div>
+{% elif placement == 'side' %}
+<div class="sidebar-ad-box">{{ ad_html }}</div>
+{% endif %}
